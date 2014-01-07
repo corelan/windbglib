@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 123 $
-$Id: windbglib.py 123 2013-12-17 17:06:25Z corelanc0d3r $ 
+$Revision: 124 $
+$Id: windbglib.py 124 2014-01-07 11:40:10Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -720,6 +720,7 @@ class Debugger:
 			return output
 		except:
 			#dprintln(traceback.format_exc())
+			#dprintln(cmd2run)
 			return ""
 
 	"""
