@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 125 $
-$Id: windbglib.py 125 2014-01-13 13:22:39Z corelanc0d3r $ 
+$Revision: 127 $
+$Id: windbglib.py 127 2014-04-06 19:47:35Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -412,6 +412,24 @@ class Debugger:
 		vaddr = kernel32.VirtualAllocEx(hprocess, lpAddress, dwSize, flAllocationType, flProtect)
 		return vaddr
 
+	def rVirtualProtect(self, lpAddress, dwSize, flNewProtect, lpflOldProtect = 0):
+		origbytes = ""
+		mustrestore = False
+		if lpflOldProtect == 0:
+			# set it to lpAddress and restore lpAddress later on
+			mustrestore = True
+			lpflOldProtect = lpAddress
+			origbytes = self.readMemory(lpAddress,4)
+		if lpflOldProtect > 0:
+			PROCESS_ALL_ACCESS = ( 0x000F0000 | 0x00100000 | 0xFFF )
+			kernel32 = windll.kernel32
+			pid = getCurrentProcessId()
+			hprocess = kernel32.OpenProcess( PROCESS_ALL_ACCESS, False, pid )
+			returnval = kernel32.VirtualProtectEx(hprocess, lpAddress, dwSize, flNewProtect, lpflOldProtect)
+			if mustrestore:
+				self.writeMemory(lpAddress,origbytes)
+			return returnval
+
 
 	def getAddress(self, functionname):
 		functionparts = functionname.split(".")
@@ -755,7 +773,11 @@ class Debugger:
 		return loadCStr(location)
 
 	def readWString(self,location):
-		return loadWStr(location)
+		try:
+			return loadWStr(location)
+		except:
+			return ""
+
 
 	def readUntil(self,start,end):
 		if start > end:
