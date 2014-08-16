@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 127 $
-$Id: windbglib.py 127 2014-04-06 19:47:35Z corelanc0d3r $ 
+$Revision: 129 $
+$Id: windbglib.py 129 2014-08-16 13:54:32Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -262,9 +262,9 @@ def isPyKDVersionCompatible(currentversion,requiredversion):
 		return True
 		
 def checkVersion():
-	pykdversion_needed = "0.2.0.18"
+	pykdversion_needed = "0.2.0.29"
 	if arch == 64:
-		pykdversion_needed = "0.2.0.18"
+		pykdversion_needed = "0.2.0.29"
 	currversion = getPyKDVersion()
 	if not isPyKDVersionCompatible(currversion,pykdversion_needed):
 		print "*******************************************************************************************"
@@ -710,6 +710,9 @@ class Debugger:
 	
 	def getOsVersion(self):
 		return getOSVersion()
+
+	def getPyKDVersionNr(self):
+		return getPyKDVersion()
 		
 	"""
 	Registers
@@ -770,13 +773,25 @@ class Debugger:
 			return ""
 
 	def readString(self,location):
-		return loadCStr(location)
+		if isValid(location):
+			try:
+				return loadCStr(location)
+			except MemoryException:
+				return loadChars(location,0x100)
+			except:
+				return ""
+		else:
+			return ""
 
 	def readWString(self,location):
-		try:
-			return loadWStr(location)
-		except:
-			return ""
+		if isValid(location):
+			try:
+				return loadWStr(location)
+			except MemoryException:
+				return loadWChars(location,0x100)
+			except:
+				return ""
+		return
 
 
 	def readUntil(self,start,end):
@@ -891,7 +906,7 @@ class Debugger:
 				modulename = modulename + moduleparts[cnt] + "."
 				cnt += 1
 			modulename = modulename.strip(".")
-			modulename = modulename.replace(".","_")
+			modulename = str(modulename.replace(".","_"))
 			thismod = None
 			try:
 				thismod = module(modulename)
@@ -900,7 +915,7 @@ class Debugger:
 					thismod = module(modulename.lower())
 				except:
 					imagename = self.getImageNameForModule(self.origmodname)
-					thismod = module(imagename)
+					thismod = module(str(imagename))
 			thismodname = thismod.name()
 			thismodbase = thismod.begin()
 			thismodsize = thismod.size()
@@ -933,8 +948,8 @@ class Debugger:
 			wmod.setDatabase(database)
 			wmod.setVersion(thismodversion)
 		except:
-			#dprintln("** Error trying to process module %s" % modulename)
-			#dprintln(traceback.format_exc())
+			dprintln("** Error trying to process module %s" % modulename)
+			dprintln(traceback.format_exc())
 			wmod = None
 		return wmod
 		
