@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 129 $
-$Id: windbglib.py 129 2014-08-16 13:54:32Z corelanc0d3r $ 
+$Revision: 130 $
+$Id: windbglib.py 130 2014-08-23 11:26:43Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -948,8 +948,8 @@ class Debugger:
 			wmod.setDatabase(database)
 			wmod.setVersion(thismodversion)
 		except:
-			dprintln("** Error trying to process module %s" % modulename)
-			dprintln(traceback.format_exc())
+			#dprintln("** Error trying to process module %s" % modulename)
+			#dprintln(traceback.format_exc())
 			wmod = None
 		return wmod
 		
