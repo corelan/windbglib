@@ -16,7 +16,8 @@ To get mona.py up and running under WinDBG, please follow these steps:
 5. Copy pykd.pyd to `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x86\winext`
 6. Open a command prompt with administrator privileges and run the following commands:
 
-   ```c:
+   ```
+c:
 cd "C:\Program Files (x86)\Common Files\Microsoft Shared\VC"
 regsvr32 msdia90.dll
    ```
