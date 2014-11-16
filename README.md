@@ -23,6 +23,6 @@ regsvr32 msdia90.dll
    ```
    (You should get a messagebox indicating that the dll was registered successfully)
 7. Download windbglib.py from https://github.com/corelan/windbglib/raw/master/windbglib.py 
-8. Save the file under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x86`   (“Unblock” the file if necessary)
+8. Save the file under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x86`   ("Unblock" the file if necessary)
 9. Download mona.py from https://github.com/corelan/mona/raw/master/mona.py  
-10. Save the file under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x86`   (“Unblock” the file if necessary)
+10. Save the file under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x86`   ("Unblock" the file if necessary)

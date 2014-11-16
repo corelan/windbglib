@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 130 $
-$Id: windbglib.py 130 2014-08-23 11:26:43Z corelanc0d3r $ 
+$Revision: 131 $
+$Id: windbglib.py 131 2013-03-12 20:08:58Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -73,7 +73,7 @@ def getOSVersion():
 	osversions = {}
 	osversions["5.0"] = "2000"
 	osversions["5.1"] = "xp"
-	osversions["5.2"] = "2003"	
+	osversions["5.2"] = "2003"
 	osversions["6.0"] = "vista"
 	osversions["6.1"] = "win7"
 	osversions["6.2"] = "win8"
@@ -97,15 +97,18 @@ def clearvars():
 	global AsmCache
 	global OpcodeCache
 	global InstructionCache
+	global PageSections
+	global ModuleCache
+	global cpebaddress	
 	MemoryPages = None
 	AsmCache = None
 	OpcodeCache = None
 	InstructionCache = None
 	InstructionCache = None
-	allvars = [var for var in globals() if var[0] != "_"]
-	for var in allvars:
-		del globals()[var]
-
+	PageSections = None
+	ModuleCache = None
+	cpebaddress = None
+	return
 
 def getPEBInfo():
 	return typedVar( "ntdll!_PEB", getCurrentProcess())
