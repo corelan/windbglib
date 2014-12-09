@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 131 $
-$Id: windbglib.py 131 2013-03-12 20:08:58Z corelanc0d3r $ 
+$Revision: 132 $
+$Id: windbglib.py 132 2013-03-12 20:08:58Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -265,6 +265,7 @@ def isPyKDVersionCompatible(currentversion,requiredversion):
 		return True
 		
 def checkVersion():
+	pykdurl = "https://github.com/corelan/windbglib/raw/master/pykd/pykd.zip"
 	pykdversion_needed = "0.2.0.29"
 	if arch == 64:
 		pykdversion_needed = "0.2.0.29"
@@ -275,7 +276,7 @@ def checkVersion():
 		print "   Installed version : %s " % currversion
 		print "   Required version : %s" % pykdversion_needed
 		print "  You can get an updated PyKD version from one of the following sources:"
-		print "   - http://redmine.corelan.be/projects/windbglib/repository/raw/pykd/pykd.zip (preferred)"
+		print "   - %s (preferred)" % pykdurl
 		print "     (unzip with 7zip)"
 		print "   - http://pykd.codeplex.com (newer versions may not work !)"
 		print "*******************************************************************************************"
@@ -290,7 +291,7 @@ def checkVersion():
 		print " and not against v%s" % currversion
 		print " This version may not work properly."
 		print " If you are having issues, I recommend to download the correct version from"
-		print "   - http://redmine.corelan.be/projects/windbglib/repository/raw/pykd/pykd.zip"
+		print "   - %s (preferred)" % pykdurl
 		print "     (unzip with 7zip)"
 		print "*******************************************************************************************"		
 	return
