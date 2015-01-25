@@ -544,6 +544,7 @@ class Debugger:
 			self.AsmCache["add esp,%x" % offset] = thisasm
 
 		self.AsmCache["retn"] = "\xc3"
+		self.AsmCache["retf"] = "\xdb"
 		for offset in xrange(0,80,2):
 			thisasm = "\xc2" + hex2bin("%02x" % offset) + "\x00"
 			self.AsmCache["retn %02x" % offset] = thisasm
@@ -1079,8 +1080,9 @@ class Debugger:
 		cached = True
 		for thisinstruction in allinstructions:	
 			thisinstruction = thisinstruction.strip(" ").lstrip(" ")
-			if thisinstruction.startswith("ret"):
+			if thisinstruction.startswith("ret") and not thisinstruction.startswith("retf"):
 				thisinstruction = thisinstruction.replace("retn","ret").replace("ret","retn")
+
 			if not thisinstruction in self.AsmCache:
 				objdisasm = disasm(address)
 				try:
