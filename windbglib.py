@@ -1,5 +1,5 @@
 """
-Copyright (c) 2011-2013, Peter Van Eeckhoutte - Corelan GCV
+Copyright (c) 2011-2015, Peter Van Eeckhoutte - Corelan GCV
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 133 $
-$Id: windbglib.py 133 2013-03-12 20:08:58Z corelanc0d3r $ 
+$Revision: 134 $
+$Id: windbglib.py 134 2015-04-20 13:15:58Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -53,12 +53,14 @@ global InstructionCache
 global PageSections
 global ModuleCache
 global cpebaddress
+global PEBModList 
 
 arch = 32
 cpebaddress = 0
 
 PageSections = {}
 ModuleCache = {}
+PEBModList = {}
 
 Registers32BitsOrder = ["EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI"]
 Registers64BitsOrder = ["RAX", "RCX", "EDX", "RBX", "RSP", "RBP", "RSI", "RDI", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15"]
@@ -297,8 +299,43 @@ def checkVersion():
 	return
 
 def getModulesFromPEB():
+	global PEBModList
 	peb = getPEBInfo()
-	moduleLst = typedVarList( peb.Ldr.deref().InLoadOrderModuleList, "ntdll!_LDR_DATA_TABLE_ENTRY", "InMemoryOrderLinks")
+	imagenames = []
+	moduleLst = typedVarList( peb.Ldr.deref().InLoadOrderModuleList, "ntdll!_LDR_DATA_TABLE_ENTRY", "InMemoryOrderLinks.Flink")
+	if len(PEBModList) == 0:
+		for mod in moduleLst:
+			thismod = loadUnicodeString(mod.BaseDllName).encode("utf8")
+			modparts = thismod.split("\\")
+			modulename = modparts[len(modparts)-1]
+			fullpath = thismod
+			exename = modulename
+
+			moduleparts = modulename.split(".")
+			imagename = ""
+			if len(moduleparts) == 1:
+				imagename = moduleparts[0]
+			cnt = 0
+			while cnt < len(moduleparts)-1:
+				imagename = imagename + moduleparts[cnt] + "."
+				cnt += 1
+			imagename = imagename.strip(".")
+
+			if imagename in imagenames:
+				# duplicate name ?  Append _<baseaddress>
+				baseaddy = int(ptrDWord(mod.getAddress() + 0x20))
+				imagename = imagename+"_%08x" % baseaddy
+
+			# check if module can be loaded
+			try:
+				modcheck = module(imagename)
+			except:
+				# change to image+baseaddress
+				baseaddy = int(ptrDWord(mod.getAddress() + 0x20))
+				imagename = "image%08x" % baseaddy
+
+			imagenames.append(imagename)
+			PEBModList[imagename] = [exename, fullpath]
 	return moduleLst
 
 def getModuleFromAddress(address):
@@ -329,46 +366,44 @@ def getModuleFromAddress(address):
 		modulename = modulename.strip(".")
 		thismod = ""
 		imagename = ""
+
 		try:
-			thismod = module(modulename)
+			moduleLst = getModulesFromPEB()
+			for mod in moduleLst:
+				thismod = loadUnicodeString(mod.BaseDllName).encode("utf8")
+				modparts = thismod.split("\\")
+				thismodname = modparts[len(modparts)-1]
+				moduleparts = thismodname.split(".")
+				if len(moduleparts) > 1:
+					thismodname = ""
+					cnt = 0
+					while cnt < len(moduleparts)-1:
+						thismodname = thismodname + moduleparts[cnt] + "."
+						cnt += 1
+					thismodname = thismodname.strip(".")					
+				if thismodname.lower() == modulename.lower():
+					baseaddy = int(ptrDWord(mod.getAddress() + 0x20))
+					baseaddr = "%08x" % baseaddy
+					lmcommand = dbgCommand("lm")
+					lmlines = lmcommand.split("\n")
+					foundinlm = False
+					for lmline in lmlines:
+						linepieces = lmline.split(" ")
+						if linepieces[0].upper() == baseaddr.upper():
+							cnt = 2
+							while cnt < len(linepieces) and not foundinlm:
+								if linepieces[cnt].strip(" ") != "":
+									imagename = linepieces[cnt]
+									foundinlm = True
+									break
+								cnt += 1
+					if not foundinlm:
+						imagename = "image%s" % baseaddr.lower()
+						break
 		except:
-			try:
-				moduleLst = getModulesFromPEB()
-				for mod in moduleLst:
-					thismod = loadUnicodeString(mod.BaseDllName).encode("utf8")
-					modparts = thismod.split("\\")
-					thismodname = modparts[len(modparts)-1]
-					moduleparts = thismodname.split(".")
-					if len(moduleparts) > 1:
-						thismodname = ""
-						cnt = 0
-						while cnt < len(moduleparts)-1:
-							thismodname = thismodname + moduleparts[cnt] + "."
-							cnt += 1
-						thismodname = thismodname.strip(".")					
-					if thismodname.lower() == modulename.lower():
-						baseaddy = int(ptrDWord(mod.getAddress() + 0x20))
-						baseaddr = "%08x" % baseaddy
-						lmcommand = dbgCommand("lm")
-						lmlines = lmcommand.split("\n")
-						foundinlm = False
-						for lmline in lmlines:
-							linepieces = lmline.split(" ")
-							if linepieces[0].upper() == baseaddr.upper():
-								cnt = 2
-								while cnt < len(linepieces) and not foundinlm:
-									if linepieces[cnt].strip(" ") != "":
-										imagename = linepieces[cnt]
-										foundinlm = True
-										break
-									cnt += 1
-						if not foundinlm:
-							imagename = "image%s" % baseaddr.lower()
-							break
-			except:
-				dprintln(traceback.format_exc())
-			modulename = imagename
-			thismod = module(imagename)
+			dprintln(traceback.format_exc())
+		modulename = imagename
+		thismod = module(imagename)
 		modbase = thismod.begin()
 		modsize = thismod.size()
 		modend = modbase + modsize
@@ -899,28 +934,30 @@ class Debugger:
 	def getModule(self,modulename):
 		wmod = None
 		self.origmodname = modulename
+		if len(PEBModList) == 0:
+			getModulesFromPEB()
 		try:
-			#modulename = modulename.lower()
-			# cut off extension
-			moduleparts = modulename.split(".")
-			modulename = ""
-			if len(moduleparts) == 1:
-				modulename = moduleparts[0]
-			cnt = 0
-			while cnt < len(moduleparts)-1:
-				modulename = modulename + moduleparts[cnt] + "."
-				cnt += 1
-			modulename = modulename.strip(".")
-			modulename = str(modulename.replace(".","_"))
 			thismod = None
-			try:
+			if modulename in PEBModList:
+				modentry = PEBModList[modulename]
 				thismod = module(modulename)
-			except:
-				try:
-					thismod = module(modulename.lower())
-				except:
-					imagename = self.getImageNameForModule(self.origmodname)
-					thismod = module(str(imagename))
+			
+			else:
+				# find a good one
+				for modentry in PEBModList:
+					modrecord = PEBModList[modentry]
+					# 0 : file
+					# 1 : path
+					if modulename == modrecord[0]:
+						thismod = module(modentry)
+						break
+
+			if thismod == None:
+				# should never hit, as we have tested if modules can be loaded already
+				imagename = self.getImageNameForModule(self.origmodname)
+				thismod = module(str(imagename))
+
+			thisimagename = thismod.image()
 			thismodname = thismod.name()
 			thismodbase = thismod.begin()
 			thismodsize = thismod.size()
@@ -953,22 +990,22 @@ class Debugger:
 			wmod.setDatabase(database)
 			wmod.setVersion(thismodversion)
 		except:
-			#dprintln("** Error trying to process module %s" % modulename)
+			dprintln("** Error trying to process module %s" % modulename)
 			#dprintln(traceback.format_exc())
 			wmod = None
 		return wmod
 		
-	
+
 	def getAllModules(self):
 		if len(self.allmodules) == 0:
-			moduleLst = getModulesFromPEB()
-			for mod in moduleLst:
-				thismod = loadUnicodeString(mod.BaseDllName).encode("utf8")
-				modparts = thismod.split("\\")
-				thismodname = modparts[len(modparts)-1]
-				wmodobject = self.getModule(thismodname)
+			if len(PEBModList) == 0:
+				getModulesFromPEB()
+			for imagename in PEBModList:
+				thismodname = PEBModList[imagename][0]
+				wmodobject = self.getModule(imagename)
 				self.allmodules[thismodname] = wmodobject
 		return self.allmodules
+
 
 	def getImageNameForModule(self,modulename):
 		try:
