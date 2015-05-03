@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 136 $
-$Id: windbglib.py 136 2015-05-03 08:24:58Z corelanc0d3r $ 
+$Revision: 138 $
+$Id: windbglib.py 138 2015-05-03 09:59:58Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -323,9 +323,10 @@ def getModulesFromPEB():
 				cnt += 1
 			imagename = imagename.strip(".")
 
-			# no windbg love for + and -
+			# no windbg love for +  -  .
 			imagename = imagename.replace("+","_")
 			imagename = imagename.replace("-","_")
+			imagename = imagename.replace(".","_")
 
 			if imagename in imagenames:
 				# duplicate name ?  Append _<baseaddress>
