@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 135 $
-$Id: windbglib.py 135 2015-05-02 23:30:58Z corelanc0d3r $ 
+$Revision: 136 $
+$Id: windbglib.py 136 2015-05-03 08:24:58Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -311,6 +311,8 @@ def getModulesFromPEB():
 			fullpath = thismod
 			exename = modulename
 
+			addtolist = True
+
 			moduleparts = modulename.split(".")
 			imagename = ""
 			if len(moduleparts) == 1:
@@ -321,8 +323,9 @@ def getModulesFromPEB():
 				cnt += 1
 			imagename = imagename.strip(".")
 
-			# no windbg love for +
+			# no windbg love for + and -
 			imagename = imagename.replace("+","_")
+			imagename = imagename.replace("-","_")
 
 			if imagename in imagenames:
 				# duplicate name ?  Append _<baseaddress>
@@ -336,9 +339,19 @@ def getModulesFromPEB():
 				# change to image+baseaddress
 				baseaddy = int(ptrDWord(mod.getAddress() + 0x20))
 				imagename = "image%08x" % baseaddy
+				try:
+					modcheck = module(imagename)
+				except:
+					print ""
+					print "   *** Error parsing %s (%s) ***" % (imagename,modulename)
+					print "   *** Please open a github issue ticket at https://github.com/corelan/windbglib ***"
+					print "   *** and provide the output of 'lm' in the ticket ***"
+					print ""
+					addtolist = False
 
-			imagenames.append(imagename)
-			PEBModList[imagename] = [exename, fullpath]
+			if addtolist:
+				imagenames.append(imagename)
+				PEBModList[imagename] = [exename, fullpath]
 	
 	return moduleLst
 
