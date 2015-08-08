@@ -49,7 +49,15 @@ regsvr32 msdia90.dll
 
 
 Running
-------------
+--------
 Open Windbg and execute the following command: `.load pykd.pyd`
 
 mona commands can the be accessed by running `!py mona`
+
+
+Notes
+-----
+1. Make sure your symbol path is set up correctly (if you don't know how to do ths, mona.py will do this for you the first time you run the script)
+2. Make sure (at least) the symbols for ntdll.dll are downloaded/available on your system.
+   If your machine is connected to the internet, windbg will do this automatically the first time you run mona.py
+   When the files are downloaded, you could disconnect the system from the internet if you would like to.
