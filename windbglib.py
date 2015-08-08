@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 139 $
-$Id: windbglib.py 139 2015-08-08 09:59:58Z corelanc0d3r $ 
+$Revision: 140 $
+$Id: windbglib.py 140 2015-08-08 09:59:58Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -383,29 +383,36 @@ def getModulesFromPEB():
 				try:
 					modcheck = module(imagename)
 				except:
-					# try finding it with windbg 'ln'
-					cmd2run = "ln 0x%08x" % baseaddy
-					output = dbgCommand(cmd2run)
-					if "!__ImageBase" in output:
-						outputlines = output.split("\n")
-						for l in outputlines:
-							if "!__ImageBase" in l:
-								lparts = l.split("!__ImageBase")
-								leftpart = lparts[0]
-								leftparts = leftpart.split(" ")
-								imagename = leftparts[len(leftparts)-1]
+					# try with base addy
 					try:
-						modcheck = module(imagename)
+						modcheck = module( baseaddy )
+						imagename = modcheck.name()
+						#print "Name: %s" % modcheck.name()
+						#print "Imagename: %s" % modcheck.image()
 					except:
-						print ""
-						print "   *** Error parsing module '%s' ('%s') at 0x%08x ***" % (imagename,modulename,baseaddy)
-						print "   *** Please open a github issue ticket at https://github.com/corelan/windbglib ***"
-						print "   *** and provide the output of the following 2 windbg commands in the ticket: ***"
-						print "         lm"
-						print "         !peb"
-						print "   *** Thanks"
-						print ""
-						addtolist = False
+						# try finding it with windbg 'ln'
+						cmd2run = "ln 0x%08x" % baseaddy
+						output = dbgCommand(cmd2run)
+						if "!__ImageBase" in output:
+							outputlines = output.split("\n")
+							for l in outputlines:
+								if "!__ImageBase" in l:
+									lparts = l.split("!__ImageBase")
+									leftpart = lparts[0]
+									leftparts = leftpart.split(" ")
+									imagename = leftparts[len(leftparts)-1]
+						try:
+							modcheck = module(imagename)
+						except:
+							print ""
+							print "   *** Error parsing module '%s' ('%s') at 0x%08x ***" % (imagename,modulename,baseaddy)
+							print "   *** Please open a github issue ticket at https://github.com/corelan/windbglib ***"
+							print "   *** and provide the output of the following 2 windbg commands in the ticket: ***"
+							print "         lm"
+							print "         !peb"
+							print "   *** Thanks"
+							print ""
+							addtolist = False
 
 			if addtolist:
 				imagenames.append(imagename)
@@ -414,7 +421,24 @@ def getModulesFromPEB():
 	return moduleLst
 
 def getModuleFromAddress(address):
+
 	global ModuleCache
+	# try fastest way first
+	try:
+		thismod = module(address)
+		# if that worked, we could add it to the cache if needed
+		modbase = thismod.begin()
+		modsize = thismod.size()
+		modend = modbase + modsize
+		modulename = thismod.image()
+		ModuleCache[modulename] = [modbase,modsize]
+		if (address >= modbase) and (address <= modend):
+			return thismod
+	except:
+		pass
+
+
+	# maybe cached	
 	for modname in ModuleCache:
 		modparts = ModuleCache[modname]
 		# 0 : base
@@ -423,6 +447,7 @@ def getModuleFromAddress(address):
 		modsize = modparts[1]
 		modend = modbase + modsize
 		if (address >= modbase) and (address <= modend):
+			#print "0x%08x belongs to %s" % (address,modname)
 			return module(modname)
 	# not cached, find it
 	moduleLst = getModulesFromPEB()
@@ -477,14 +502,27 @@ def getModuleFromAddress(address):
 						break
 		except:
 			dprintln(traceback.format_exc())
-		modulename = imagename
-		thismod = module(imagename)
-		modbase = thismod.begin()
-		modsize = thismod.size()
-		modend = modbase + modsize
-		ModuleCache[modulename] = [modbase,modsize]
-		if (address >= modbase) and (address <= modend):
-			return thismod
+
+		try:
+			modulename = imagename
+			thismod = module(imagename)
+			modbase = thismod.begin()
+			modsize = thismod.size()
+			modend = modbase + modsize
+			ModuleCache[modulename] = [modbase,modsize]
+			if (address >= modbase) and (address <= modend):
+				return thismod
+		except:
+			thismod = module(address)
+
+			modbase = thismod.begin()
+			modsize = thismod.size()
+			modend = modbase + modsize
+			modulename = thismod.image()
+			ModuleCache[modulename] = [modbase,modsize]
+			if (address >= modbase) and (address <= modend):
+				return thismod			
+
 	return None
 
 
