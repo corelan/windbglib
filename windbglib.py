@@ -94,6 +94,14 @@ def getArchitecture():
 	else:
 		return 64
 
+def getNtHeaders(modulebase):
+	if getArchitecture() == 64:
+		ntheaders = "_IMAGE_NT_HEADERS64"
+	else:
+		ntheaders = "_IMAGE_NT_HEADERS"
+
+	return module("ntdll").typedVar(ntheaders, modulebase + ptrDWord(modulebase + 0x3c))
+
 def clearvars():
 	global MemoryPages
 	global AsmCache
@@ -1084,11 +1092,14 @@ class Debugger:
 				thismodversion = thismodversion.strip(".")
 			except:
 				thismodversion = ""
-			ntHeader = module("ntdll").typedVar("_IMAGE_NT_HEADERS", thismodbase + ptrDWord(thismodbase + 0x3c))
+			ntHeader = getNtHeaders(thismodbase)
 			preferredbase = ntHeader.OptionalHeader.ImageBase
 			entrypoint = ntHeader.OptionalHeader.AddressOfEntryPoint
 			codebase = ntHeader.OptionalHeader.BaseOfCode
-			database = ntHeader.OptionalHeader.BaseOfData
+			if getArchitecture() == 64:
+				database = 0
+			else:
+				database = ntHeader.OptionalHeader.BaseOfData
 			sizeofcode = ntHeader.OptionalHeader.SizeOfCode
 
 			wmod = wmodule(thismodname)
@@ -1222,7 +1233,7 @@ class Debugger:
 			# assemble somewhere else - let's say at the ntdll entrypoint
 			thismod = module("ntdll")
 			thismodbase = thismod.begin()
-			ntHeader = module("ntdll").typedVar("_IMAGE_NT_HEADERS", thismodbase + ptrDWord(thismodbase + 0x3c))
+			ntHeader = getNtHeaders(thismodbase)
 			entrypoint = ntHeader.OptionalHeader.AddressOfEntryPoint
 			address = thismodbase + entrypoint
 		allinstructions = instructions.lower().split("\n")
@@ -1468,7 +1479,7 @@ class wmodule:
 
 	def getSymbols(self):
 		# enumerate IAT and EAT and put into a symbol object
-		ntHeader = module("ntdll").typedVar("_IMAGE_NT_HEADERS", self.modbase + ptrDWord(self.modbase + 0x3c))
+		ntHeader = getNtHeaders(self.modbase)
 		pSize = 4
 		iatlist = self.getIATList(ntHeader,pSize)
 		symbollist = {}
@@ -1515,7 +1526,7 @@ class wmodule:
 		return eatlist
 
 	def getSectionAddress(self,sectionname):
-		ntHeader = module("ntdll").typedVar("_IMAGE_NT_HEADERS", self.modbase + ptrDWord(self.modbase + 0x3c))
+		ntHeader = getNtHeaders(self.modbase)
 		nrsections = int(ntHeader.FileHeader.NumberOfSections)
 		sectionsize = 40
 		sizeOptionalHeader = int(ntHeader.FileHeader.SizeOfOptionalHeader)
@@ -1655,7 +1666,7 @@ class wpage():
 				thismodend = thismod.end()
 				if self.begin >= thismodbase and self.begin <= thismodend:
 					# find sections and their addresses
-					ntHeader = module("ntdll").typedVar("_IMAGE_NT_HEADERS", thismodbase + ptrDWord(thismodbase + 0x3c))
+					ntHeader = getNtHeaders(thismodbase)
 					nrsections = int(ntHeader.FileHeader.NumberOfSections)
 					sectionsize = 40
 					sizeOptionalHeader = int(ntHeader.FileHeader.SizeOfOptionalHeader)
