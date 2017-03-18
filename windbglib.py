@@ -974,7 +974,7 @@ class Debugger:
 			try:
 				return pykd.loadCStr(location)
 			except pykd.MemoryException:
-				return pykd.loadChars(location,0x100)
+				return pykd.loadChars(location, 0x100)
 			except:
 				return ""
 		else:
@@ -985,7 +985,7 @@ class Debugger:
 			try:
 				return pykd.loadWStr(location)
 			except pykd.MemoryException:
-				return pykd.loadWChars(location,0x100)
+				return pykd.loadWChars(location, 0x100)
 			except:
 				return ""
 		return
@@ -1591,8 +1591,7 @@ class wmodule:
 		for sectioncnt in xrange(nrsections):
 			# IMAGE_SECTION_HEADER[i]
 			sectionstart = (ntHeader.OptionalHeader.getAddress() + sizeOptionalHeader) + (sectioncnt*sectionsize)
-			# This could produce incorrect results on non-terminated section names
-			thissection = pykd.loadCStr(sectionstart)
+			thissection = pykd.loadChars(sectionstart, 8).rstrip('\0')
 			if thissection == sectionname:
 				# IMAGE_SECTION_HEADER.SizeOfRawData(DWORD)
 				thissectionsize = pykd.ptrDWord(sectionstart + 0x8 + 0x8)
@@ -1734,7 +1733,7 @@ class wpage():
 					sizeOptionalHeader = int(ntHeader.FileHeader.SizeOfOptionalHeader)
 					for sectioncnt in xrange(nrsections):
 						sectionstart = (ntHeader.OptionalHeader.getAddress() + sizeOptionalHeader) + (sectioncnt*sectionsize)
-						thissection = pykd.loadCStr(sectionstart)
+						thissection = pykd.loadChars(sectionstart, 8).rstrip('\0')
 						# IMAGE_SECTION_HEADER.SizeOfRawData(DWORD)
 						thissectionsize = pykd.ptrDWord(sectionstart + 0x8 + 0x8)
 						# IMAGE_SECTION_HEADER.VirtualAddress(DWORD)
