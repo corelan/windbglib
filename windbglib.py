@@ -95,11 +95,14 @@ def getArchitecture():
 		return 64
 
 def getNtHeaders(modulebase):
+	# http://www.nirsoft.net/kernel_struct/vista/IMAGE_DOS_HEADER.html
+	# http://www.nirsoft.net/kernel_struct/vista/IMAGE_NT_HEADERS.html
 	if getArchitecture() == 64:
 		ntheaders = "_IMAGE_NT_HEADERS64"
 	else:
 		ntheaders = "_IMAGE_NT_HEADERS"
 
+	# modulebase + 0x3c = IMAGE_DOS_HEADER.e_lfanew
 	return pykd.module("ntdll").typedVar(ntheaders, modulebase + pykd.ptrDWord(modulebase + 0x3c))
 
 def clearvars():
@@ -350,6 +353,10 @@ def getModulesFromPEB():
 	global PEBModList
 	peb = getPEBInfo()
 	imagenames = []
+	# http://www.nirsoft.net/kernel_struct/vista/PEB.html
+	# http://www.nirsoft.net/kernel_struct/vista/PEB_LDR_DATA.html
+	# http://www.nirsoft.net/kernel_struct/vista/LDR_DATA_TABLE_ENTRY.html
+	# The usage of _LDR_DATA_TABLE_ENTRY.SizeOfImage is very confusing and appears to actually contain the module base
 	moduleLst = pykd.typedVarList(peb.Ldr.deref().InLoadOrderModuleList, "ntdll!_LDR_DATA_TABLE_ENTRY", "InMemoryOrderLinks.Flink")
 	if len(PEBModList) == 0:
 		for mod in moduleLst:
@@ -378,6 +385,7 @@ def getModulesFromPEB():
 
 			if imagename in imagenames:
 				# duplicate name ?  Append _<baseaddress>
+				# mod.getAddress() + 0x20 = _LDR_DATA_TABLE_ENTRY.SizeOfImage
 				baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
 				imagename = imagename+"_%08x" % baseaddy
 
@@ -386,6 +394,7 @@ def getModulesFromPEB():
 				modcheck = pykd.module(imagename)
 			except:
 				# change to image+baseaddress
+				# mod.getAddress() + 0x20 = _LDR_DATA_TABLE_ENTRY.SizeOfImage
 				baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
 				imagename = "image%08x" % baseaddy
 				try:
@@ -490,6 +499,7 @@ def getModuleFromAddress(address):
 						cnt += 1
 					thismodname = thismodname.strip(".")					
 				if thismodname.lower() == modulename.lower():
+					# mod.getAddress() + 0x20 = _LDR_DATA_TABLE_ENTRY.SizeOfImage
 					baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
 					baseaddr = "%08x" % baseaddy
 					lmcommand = pykd.dbgCommand("lm")
@@ -841,8 +851,11 @@ class Debugger:
 	"""
 	
 	def getDebuggedName(self):
+		# http://www.nirsoft.net/kernel_struct/vista/PEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/RTL_USER_PROCESS_PARAMETERS.html
 		peb = getPEBInfo()
 		ProcessParameters = peb.ProcessParameters
+		# ProcessParameters + 0x3c = _RTL_USER_PROCESS_PARAMETERS.ImagePathName(_UNICODE_STRING).Buffer(WORD*)
 		ImageFile = ProcessParameters + 0x3c
 		pImageFile = pykd.ptrDWord(ImageFile)
 		sImageFile = pykd.loadWStr(pImageFile).encode("utf8")
@@ -850,10 +863,13 @@ class Debugger:
 		return sImageFilepieces[len(sImageFilepieces)-1]
 		
 	def getDebuggedPid(self):
+		# http://www.nirsoft.net/kernel_struct/vista/TEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/CLIENT_ID.html
 		teb = getTEBAddress()
 		offset = 0x20
 		if arch == 64:
 			offset = 0x40
+		# _TEB.ClientId(CLIENT_ID).UniqueProcess(PVOID)
 		pid = pykd.ptrDWord(teb+offset)
 		return pid
 
@@ -910,13 +926,19 @@ class Debugger:
 	"""
 
 	def getSehChain(self):
+		# http://www.nirsoft.net/kernel_struct/vista/TEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/NT_TIB.html
+		# http://www.nirsoft.net/kernel_struct/vista/EXCEPTION_REGISTRATION_RECORD.html
 		sehchain = []
 		# get top of chain
 		teb = getTEBAddress()
+		# _TEB.NtTib(NT_TIB).ExceptionList(PEXCEPTION_REGISTRATION_RECORD)
 		nextrecord = pykd.ptrDWord(teb)
 		validrecord = True
 		while nextrecord != 0xffffffff and pykd.isValid(nextrecord):
+			# _EXCEPTION_REGISTRATION_RECORD.Next(PEXCEPTION_REGISTRATION_RECORD)
 			nseh = pykd.ptrDWord(nextrecord)
+			# _EXCEPTION_REGISTRATION_RECORD.Handler(PEXCEPTION_DISPOSITION)
 			seh = pykd.ptrDWord(nextrecord+4)
 			sehrecord = [nextrecord,seh]
 			sehchain.append(sehrecord)
@@ -1024,11 +1046,15 @@ class Debugger:
 		return 0
 
 	def getHeapsAddress(self):
+		# http://www.nirsoft.net/kernel_struct/vista/PEB.html
 		allheaps = []
 		peb = getPEBInfo()
+		# _PEB.NumberOfHeaps(ULONG)
 		nrofheaps = int(pykd.ptrDWord(peb+0x88))
+		# _PEB.ProcessHeaps(VOID**)
 		processheaps = int(peb.ProcessHeaps)
 		for i in xrange(nrofheaps):
+			# _PEB.ProcessHeaps[i](VOID*)
 			nextheap = pykd.ptrDWord(processheaps + (i*4))
 			if nextheap == 0x00000000:
 				break
@@ -1132,6 +1158,9 @@ class Debugger:
 
 
 	def getImageNameForModule(self,modulename):
+		# http://www.nirsoft.net/kernel_struct/vista/PEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/PEB_LDR_DATA.html
+		# http://www.nirsoft.net/kernel_struct/vista/LDR_DATA_TABLE_ENTRY.html
 		try:
 			imagename = ""
 			moduleLst = getModulesFromPEB()
@@ -1141,6 +1170,7 @@ class Debugger:
 				thismodname = modparts[len(modparts)-1]
 				moduleparts = thismodname.split(".")
 				if thismodname.lower() == modulename.lower():
+					# mod.getAddress() + 0x20 = _LDR_DATA_TABLE_ENTRY.SizeOfImage
 					baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
 					baseaddr = "%08x" % baseaddy
 					lmcommand = self.nativeCommand("lm")
@@ -1498,6 +1528,8 @@ class wmodule:
 		return symbollist
 
 	def getIATList(self,ntHeader, pSize):
+		# If Import Address Table Directory (DataDirectory[12]) is set this will work.
+		# The fallback case of Import Directory (DataDirectory[1]) will produce garbage.
 		iatlist = {}
 		iatdir = ntHeader.OptionalHeader.DataDirectory[12]
 		if iatdir.Size == 0:
@@ -1513,14 +1545,20 @@ class wmodule:
 		return iatlist
 					
 	def getEATList(self,ntHeader, pSize):
+		# http://www.pinvoke.net/default.aspx/Structures.IMAGE_EXPORT_DIRECTORY
 		eatlist = {}
 		if ntHeader.OptionalHeader.DataDirectory[0].Size > 0:
 			eatAddr = self.modbase + ntHeader.OptionalHeader.DataDirectory[0].VirtualAddress
+			# eatAddr + 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames(DWORD)
 			nr_of_names = pykd.ptrDWord(eatAddr + 0x18)
+			# eatAddr + 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames(DWORD)
 			rva_of_names = self.modbase + pykd.ptrDWord(eatAddr + 0x20)
+			# eatAddr + 0x1c = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions(DWORD)
 			address_of_functions = self.modbase + pykd.ptrDWord(eatAddr + 0x1c)
 			for i in range (0, nr_of_names):
+				# IMAGE_EXPORT_DIRECTORY.AddressOfNames[i](DWORD)
 				eatName = pykd.loadCStr(self.modbase + pykd.ptrDWord(rva_of_names + 4 * i))
+				# IMAGE_EXPORT_DIRECTORY.AddressOfFunctions[i](DWORD)
 				eatAddress = self.modbase + pykd.ptrDWord(address_of_functions + 4*i)
 				eatlist[eatName] = eatAddress
 		return eatlist
@@ -1531,10 +1569,14 @@ class wmodule:
 		sectionsize = 40
 		sizeOptionalHeader = int(ntHeader.FileHeader.SizeOfOptionalHeader)
 		for sectioncnt in xrange(nrsections):
+			# IMAGE_SECTION_HEADER[i]
 			sectionstart = (ntHeader.OptionalHeader.getAddress() + sizeOptionalHeader) + (sectioncnt*sectionsize)
+			# This could produce incorrect results on non-terminated section names
 			thissection = pykd.loadCStr(sectionstart)
 			if thissection == sectionname:
+				# IMAGE_SECTION_HEADER.SizeOfRawData(DWORD)
 				thissectionsize = pykd.ptrDWord(sectionstart + 0x8 + 0x8)
+				# IMAGE_SECTION_HEADER.VirtualAddress(DWORD)
 				thissectionrva = pykd.ptrDWord(sectionstart + 0x4 + 0x8)
 				thissectionstart = self.modbase + thissectionrva
 				return thissectionstart
@@ -1673,7 +1715,9 @@ class wpage():
 					for sectioncnt in xrange(nrsections):
 						sectionstart = (ntHeader.OptionalHeader.getAddress() + sizeOptionalHeader) + (sectioncnt*sectionsize)
 						thissection = pykd.loadCStr(sectionstart)
+						# IMAGE_SECTION_HEADER.SizeOfRawData(DWORD)
 						thissectionsize = pykd.ptrDWord(sectionstart + 0x8 + 0x8)
+						# IMAGE_SECTION_HEADER.VirtualAddress(DWORD)
 						thissectionrva = pykd.ptrDWord(sectionstart + 0x4 + 0x8)
 						thissectionstart = thismodbase + thissectionrva
 						thissectionend = thissectionstart + thissectionsize
@@ -1851,10 +1895,13 @@ class wthread:
 		return self.address
 
 	def getId(self):
+		# http://www.nirsoft.net/kernel_struct/vista/TEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/CLIENT_ID.html
 		teb = self.getTEB()
 		offset = 0x24
 		if arch == 64:
 			offset = 0x48
+		# _TEB.ClientId(CLIENT_ID).UniqueThread(PVOID)
 		tid = pykd.ptrDWord(teb+offset)
 		return tid
 
