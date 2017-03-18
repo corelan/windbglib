@@ -985,7 +985,7 @@ class Debugger:
 			try:
 				return pykd.loadWStr(location)
 			except pykd.MemoryException:
-				return pykd.oadWChars(location,0x100)
+				return pykd.loadWChars(location,0x100)
 			except:
 				return ""
 		return
