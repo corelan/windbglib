@@ -939,20 +939,21 @@ class Debugger:
 		# http://www.nirsoft.net/kernel_struct/vista/TEB.html
 		# http://www.nirsoft.net/kernel_struct/vista/NT_TIB.html
 		# http://www.nirsoft.net/kernel_struct/vista/EXCEPTION_REGISTRATION_RECORD.html
+
+		# x64 has no SEH chain
+		if arch == 64:
+			return []
 		sehchain = []
 		# get top of chain
 		teb = getTEBAddress()
 		# _TEB.NtTib(NT_TIB).ExceptionList(PEXCEPTION_REGISTRATION_RECORD)
 		nextrecord = pykd.ptrPtr(teb)
 		validrecord = True
-		offset = 4
-		if arch == 64:
-			offset = 8
 		while nextrecord != 0xffffffff and pykd.isValid(nextrecord):
 			# _EXCEPTION_REGISTRATION_RECORD.Next(PEXCEPTION_REGISTRATION_RECORD)
 			nseh = pykd.ptrPtr(nextrecord)
 			# _EXCEPTION_REGISTRATION_RECORD.Handler(PEXCEPTION_DISPOSITION)
-			seh = pykd.ptrPtr(nextrecord+offset)
+			seh = pykd.ptrPtr(nextrecord+4)
 			sehrecord = [nextrecord,seh]
 			sehchain.append(sehrecord)
 			nextrecord = nseh
