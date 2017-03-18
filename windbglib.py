@@ -1531,6 +1531,8 @@ class wmodule:
 		# enumerate IAT and EAT and put into a symbol object
 		ntHeader = getNtHeaders(self.modbase)
 		pSize = 4
+		if arch == 64:
+			pSize = 8
 		iatlist = self.getIATList(ntHeader,pSize)
 		symbollist = {}
 		for iatEntry in iatlist:
@@ -1557,7 +1559,7 @@ class wmodule:
 		if iatdir.Size > 0:
 			iatAddr = self.modbase + iatdir.VirtualAddress
 			for i in range(0, iatdir.Size / pSize):
-				iatEntry = pykd.ptrDWord(iatAddr + i*pSize)
+				iatEntry = pykd.ptrPtr(iatAddr + i*pSize)
 				if iatEntry != None and iatEntry != 0:
 					symbolName = pykd.findSymbol(iatEntry)
 					if "!" in symbolName:
