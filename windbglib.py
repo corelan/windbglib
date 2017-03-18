@@ -357,6 +357,9 @@ def getModulesFromPEB():
 	# http://www.nirsoft.net/kernel_struct/vista/PEB_LDR_DATA.html
 	# http://www.nirsoft.net/kernel_struct/vista/LDR_DATA_TABLE_ENTRY.html
 	# The usage of _LDR_DATA_TABLE_ENTRY.SizeOfImage is very confusing and appears to actually contain the module base
+	offset = 0x20
+	if arch == 64:
+		offset = 0x40
 	moduleLst = pykd.typedVarList(peb.Ldr.deref().InLoadOrderModuleList, "ntdll!_LDR_DATA_TABLE_ENTRY", "InMemoryOrderLinks.Flink")
 	if len(PEBModList) == 0:
 		for mod in moduleLst:
@@ -385,8 +388,8 @@ def getModulesFromPEB():
 
 			if imagename in imagenames:
 				# duplicate name ?  Append _<baseaddress>
-				# mod.getAddress() + 0x20 = _LDR_DATA_TABLE_ENTRY.SizeOfImage
-				baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
+				# mod.getAddress() + offset = _LDR_DATA_TABLE_ENTRY.SizeOfImage
+				baseaddy = int(pykd.ptrPtr(mod.getAddress() + offset))
 				imagename = imagename+"_%08x" % baseaddy
 
 			# check if module can be loaded
@@ -394,8 +397,8 @@ def getModulesFromPEB():
 				modcheck = pykd.module(imagename)
 			except:
 				# change to image+baseaddress
-				# mod.getAddress() + 0x20 = _LDR_DATA_TABLE_ENTRY.SizeOfImage
-				baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
+				# mod.getAddress() + offset = _LDR_DATA_TABLE_ENTRY.SizeOfImage
+				baseaddy = int(pykd.ptrPtr(mod.getAddress() + offset))
 				imagename = "image%08x" % baseaddy
 				try:
 					modcheck = pykd.module(imagename)
@@ -438,6 +441,10 @@ def getModulesFromPEB():
 	return moduleLst
 
 def getModuleFromAddress(address):
+
+	offset = 0x20
+	if arch == 64:
+		offset = 0x40
 
 	global ModuleCache
 	# try fastest way first
@@ -499,8 +506,8 @@ def getModuleFromAddress(address):
 						cnt += 1
 					thismodname = thismodname.strip(".")					
 				if thismodname.lower() == modulename.lower():
-					# mod.getAddress() + 0x20 = _LDR_DATA_TABLE_ENTRY.SizeOfImage
-					baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
+					# mod.getAddress() + offset = _LDR_DATA_TABLE_ENTRY.SizeOfImage
+					baseaddy = int(pykd.ptrPtr(mod.getAddress() + offset))
 					baseaddr = "%08x" % baseaddy
 					lmcommand = pykd.dbgCommand("lm")
 					lmlines = lmcommand.split("\n")
@@ -855,9 +862,12 @@ class Debugger:
 		# http://www.nirsoft.net/kernel_struct/vista/RTL_USER_PROCESS_PARAMETERS.html
 		peb = getPEBInfo()
 		ProcessParameters = peb.ProcessParameters
-		# ProcessParameters + 0x3c = _RTL_USER_PROCESS_PARAMETERS.ImagePathName(_UNICODE_STRING).Buffer(WORD*)
-		ImageFile = ProcessParameters + 0x3c
-		pImageFile = pykd.ptrDWord(ImageFile)
+		offset = 0x3c
+		if arch == 64:
+			offset = 0x68
+		# ProcessParameters + offset = _RTL_USER_PROCESS_PARAMETERS.ImagePathName(_UNICODE_STRING).Buffer(WORD*)
+		ImageFile = ProcessParameters + offset
+		pImageFile = pykd.ptrPtr(ImageFile)
 		sImageFile = pykd.loadWStr(pImageFile).encode("utf8")
 		sImageFilepieces = sImageFile.split("\\")
 		return sImageFilepieces[len(sImageFilepieces)-1]
@@ -933,13 +943,16 @@ class Debugger:
 		# get top of chain
 		teb = getTEBAddress()
 		# _TEB.NtTib(NT_TIB).ExceptionList(PEXCEPTION_REGISTRATION_RECORD)
-		nextrecord = pykd.ptrDWord(teb)
+		nextrecord = pykd.ptrPtr(teb)
 		validrecord = True
+		offset = 4
+		if arch == 64:
+			offset = 8
 		while nextrecord != 0xffffffff and pykd.isValid(nextrecord):
 			# _EXCEPTION_REGISTRATION_RECORD.Next(PEXCEPTION_REGISTRATION_RECORD)
-			nseh = pykd.ptrDWord(nextrecord)
+			nseh = pykd.ptrPtr(nextrecord)
 			# _EXCEPTION_REGISTRATION_RECORD.Handler(PEXCEPTION_DISPOSITION)
-			seh = pykd.ptrDWord(nextrecord+4)
+			seh = pykd.ptrPtr(nextrecord+offset)
 			sehrecord = [nextrecord,seh]
 			sehchain.append(sehrecord)
 			nextrecord = nseh
@@ -1049,13 +1062,16 @@ class Debugger:
 		# http://www.nirsoft.net/kernel_struct/vista/PEB.html
 		allheaps = []
 		peb = getPEBInfo()
+		offset = 0x88
+		if arch == 64:
+			offset = 0xe8
 		# _PEB.NumberOfHeaps(ULONG)
-		nrofheaps = int(pykd.ptrDWord(peb+0x88))
+		nrofheaps = int(pykd.ptrDWord(peb+offset))
 		# _PEB.ProcessHeaps(VOID**)
 		processheaps = int(peb.ProcessHeaps)
 		for i in xrange(nrofheaps):
 			# _PEB.ProcessHeaps[i](VOID*)
-			nextheap = pykd.ptrDWord(processheaps + (i*4))
+			nextheap = pykd.ptrPtr(processheaps + (i*(arch/8)))
 			if nextheap == 0x00000000:
 				break
 			if not nextheap in allheaps:
@@ -1161,6 +1177,9 @@ class Debugger:
 		# http://www.nirsoft.net/kernel_struct/vista/PEB.html
 		# http://www.nirsoft.net/kernel_struct/vista/PEB_LDR_DATA.html
 		# http://www.nirsoft.net/kernel_struct/vista/LDR_DATA_TABLE_ENTRY.html
+		offset = 0x20
+		if arch == 64:
+			offset = 0x40
 		try:
 			imagename = ""
 			moduleLst = getModulesFromPEB()
@@ -1170,8 +1189,8 @@ class Debugger:
 				thismodname = modparts[len(modparts)-1]
 				moduleparts = thismodname.split(".")
 				if thismodname.lower() == modulename.lower():
-					# mod.getAddress() + 0x20 = _LDR_DATA_TABLE_ENTRY.SizeOfImage
-					baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
+					# mod.getAddress() + offset = _LDR_DATA_TABLE_ENTRY.SizeOfImage
+					baseaddy = int(pykd.ptrPtr(mod.getAddress() + offset))
 					baseaddr = "%08x" % baseaddy
 					lmcommand = self.nativeCommand("lm")
 					lmlines = lmcommand.split("\n")
