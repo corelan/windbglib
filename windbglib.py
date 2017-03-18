@@ -915,7 +915,7 @@ class Debugger:
 			regs.append("RIP")
 		reginfo = {}
 		for thisreg in regs:
-			reginfo[thisreg.upper()] = int(pykd.reg(thisreg))
+			reginfo[thisreg.upper()] = int(pykd.reg(thisreg.lower()))
 		return reginfo
 	
 
