@@ -592,23 +592,14 @@ class Debugger:
 		return vaddr
 
 	def rVirtualProtect(self, lpAddress, dwSize, flNewProtect, lpflOldProtect = 0):
-		origbytes = ""
-		mustrestore = False
-		if lpflOldProtect == 0:
-			# set it to lpAddress and restore lpAddress later on
-			mustrestore = True
-			lpflOldProtect = lpAddress
-			origbytes = self.readMemory(lpAddress,4)
-		if lpflOldProtect > 0:
-			PROCESS_VM_OPERATION = 0x0008
-			kernel32 = ctypes.windll.kernel32
-			pid = self.getDebuggedPid()
-			hprocess = kernel32.OpenProcess( PROCESS_VM_OPERATION, False, pid )
-			returnval = kernel32.VirtualProtectEx(hprocess, lpAddress, dwSize, flNewProtect, lpflOldProtect)
-			kernel32.CloseHandle(hprocess)
-			if mustrestore:
-				self.writeMemory(lpAddress,origbytes)
-			return returnval
+		PROCESS_VM_OPERATION = 0x0008
+		kernel32 = ctypes.windll.kernel32
+		pid = self.getDebuggedPid()
+		hprocess = kernel32.OpenProcess(PROCESS_VM_OPERATION, False, pid)
+		pold_protect = ctypes.addressof(ctypes.c_int32(0))
+		returnval = kernel32.VirtualProtectEx(hprocess, lpAddress, dwSize, flNewProtect, pold_protect)
+		kernel32.CloseHandle(hprocess)
+		return returnval
 
 
 	def getAddress(self, functionname):
