@@ -864,13 +864,11 @@ class Debugger:
 		# http://www.nirsoft.net/kernel_struct/vista/RTL_USER_PROCESS_PARAMETERS.html
 		peb = getPEBInfo()
 		ProcessParameters = peb.ProcessParameters
-		offset = 0x3c
+		offset = 0x38
 		if arch == 64:
-			offset = 0x68
-		# ProcessParameters + offset = _RTL_USER_PROCESS_PARAMETERS.ImagePathName(_UNICODE_STRING).Buffer(WORD*)
-		ImageFile = ProcessParameters + offset
-		pImageFile = pykd.ptrPtr(ImageFile)
-		sImageFile = pykd.loadWStr(pImageFile).encode("utf8")
+			offset = 0x60
+		# ProcessParameters + offset = _RTL_USER_PROCESS_PARAMETERS.ImagePathName(_UNICODE_STRING)
+		sImageFile = pykd.loadUnicodeString(ProcessParameters + offset).encode("utf8")
 		sImageFilepieces = sImageFile.split("\\")
 		return sImageFilepieces[len(sImageFilepieces)-1]
 		
