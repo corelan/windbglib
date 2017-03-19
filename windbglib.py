@@ -82,7 +82,7 @@ def getOSVersion():
 	osversions["6.2"] = "win8"
 	osversions["6.3"] = "win8.1"
 	osversions["10.0"] = "win10"
-	peb = 	getPEBInfo()
+	peb = getPEBInfo()
 	majorversion = int(peb.OSMajorVersion)
 	minorversion = int(peb.OSMinorVersion)
 	thisversion = str(majorversion)+"." + str(minorversion)
