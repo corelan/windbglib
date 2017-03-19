@@ -582,11 +582,12 @@ class Debugger:
 		return vaddr
 
 	def rVirtualAlloc(self, lpAddress, dwSize, flAllocationType, flProtect):
-		PROCESS_ALL_ACCESS = ( 0x000F0000 | 0x00100000 | 0xFFF )
+		PROCESS_VM_OPERATION = 0x0008
 		kernel32 = ctypes.windll.kernel32
-		pid = pykd.getCurrentProcessId()
-		hprocess = kernel32.OpenProcess( PROCESS_ALL_ACCESS, False, pid )
+		pid = self.getDebuggedPid()
+		hprocess = kernel32.OpenProcess( PROCESS_VM_OPERATION, False, pid )
 		vaddr = kernel32.VirtualAllocEx(hprocess, lpAddress, dwSize, flAllocationType, flProtect)
+		kernel32.CloseHandle(hprocess)
 		return vaddr
 
 	def rVirtualProtect(self, lpAddress, dwSize, flNewProtect, lpflOldProtect = 0):
@@ -598,11 +599,12 @@ class Debugger:
 			lpflOldProtect = lpAddress
 			origbytes = self.readMemory(lpAddress,4)
 		if lpflOldProtect > 0:
-			PROCESS_ALL_ACCESS = ( 0x000F0000 | 0x00100000 | 0xFFF )
+			PROCESS_VM_OPERATION = 0x0008
 			kernel32 = ctypes.windll.kernel32
-			pid = pykd.getCurrentProcessId()
-			hprocess = kernel32.OpenProcess( PROCESS_ALL_ACCESS, False, pid )
+			pid = self.getDebuggedPid()
+			hprocess = kernel32.OpenProcess( PROCESS_VM_OPERATION, False, pid )
 			returnval = kernel32.VirtualProtectEx(hprocess, lpAddress, dwSize, flNewProtect, lpflOldProtect)
+			kernel32.CloseHandle(hprocess)
 			if mustrestore:
 				self.writeMemory(lpAddress,origbytes)
 			return returnval
