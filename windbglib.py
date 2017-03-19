@@ -44,6 +44,7 @@ import struct
 import traceback
 import pickle
 import ctypes
+import array
 
 global MemoryPages
 global AsmCache
@@ -1004,12 +1005,9 @@ class Debugger:
 
 
 	def writeMemory(self,location,data):
-		putback = "eb 0x%08x" % location
-		thisbyte = ""
-		for origbyte in data:
-			thisbyte = bin2hex(origbyte)
-			putback += " %s" % thisbyte
-		self.nativeCommand(putback)
+		A = array.array('B')
+		A.fromstring(data)
+		pykd.writeBytes(location, A.tolist())
 		return
 
 	def writeLong(self,location,dword):
