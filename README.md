@@ -17,11 +17,12 @@ To get mona.py up and running under WinDBG, please follow these steps:
 6. Open a command prompt with administrator privileges and run the following commands:
 
    ```
-c:
-cd "C:\Program Files (x86)\Common Files\Microsoft Shared\VC"
-regsvr32 msdia90.dll
-   ```
+   c:
+   cd "C:\Program Files (x86)\Common Files\Microsoft Shared\VC"
+   regsvr32 msdia90.dll
    (You should get a messagebox indicating that the dll was registered successfully)
+   ```
+
 7. Download windbglib.py from https://github.com/corelan/windbglib/raw/master/windbglib.py 
 8. Save the file under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x86`   ("Unblock" the file if necessary)
 9. Download mona.py from https://github.com/corelan/mona/raw/master/mona.py  
@@ -37,11 +38,12 @@ regsvr32 msdia90.dll
 6. Open a command prompt with administrator privileges and run the following commands:
 
    ```
-c:
-cd "C:\Program Files\Common Files\Microsoft Shared\VC"
-regsvr32 msdia90.dll
-   ```
+   c:
+   cd "C:\Program Files\Common Files\Microsoft Shared\VC"
+   regsvr32 msdia90.dll
    (You should get a messagebox indicating that the dll was registered successfully)
+   ```
+
 7. Download windbglib.py from https://github.com/corelan/windbglib/raw/master/windbglib.py 
 8. Save the file under `C:\Program Files\Debugging Tools for Windows (x86)`   ("Unblock" the file if necessary)
 9. Download mona.py from https://github.com/corelan/mona/raw/master/mona.py  
