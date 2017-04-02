@@ -1,5 +1,5 @@
 """
-Copyright (c) 2011-2016, Peter Van Eeckhoutte - Corelan GCV
+Copyright (c) 2011-2017, Peter Van Eeckhoutte - Corelan GCV
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 142 $
-$Id: windbglib.py 142 2017-03-18 07:14:58Z corelanc0d3r $ 
+$Revision: 143 $
+$Id: windbglib.py 143 2017-04-02 07:14:58Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
