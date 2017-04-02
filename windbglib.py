@@ -44,6 +44,7 @@ import struct
 import traceback
 import pickle
 import ctypes
+import array
 
 global MemoryPages
 global AsmCache
@@ -79,6 +80,8 @@ def getOSVersion():
 	osversions["6.0"] = "vista"
 	osversions["6.1"] = "win7"
 	osversions["6.2"] = "win8"
+	osversions["6.3"] = "win8.1"
+	osversions["10.0"] = "win10"
 	peb = getPEBInfo()
 	majorversion = int(peb.OSMajorVersion)
 	minorversion = int(peb.OSMinorVersion)
@@ -95,11 +98,14 @@ def getArchitecture():
 		return 64
 
 def getNtHeaders(modulebase):
+	# http://www.nirsoft.net/kernel_struct/vista/IMAGE_DOS_HEADER.html
+	# http://www.nirsoft.net/kernel_struct/vista/IMAGE_NT_HEADERS.html
 	if getArchitecture() == 64:
 		ntheaders = "_IMAGE_NT_HEADERS64"
 	else:
 		ntheaders = "_IMAGE_NT_HEADERS"
 
+	# modulebase + 0x3c = IMAGE_DOS_HEADER.e_lfanew
 	return pykd.module("ntdll").typedVar(ntheaders, modulebase + pykd.ptrDWord(modulebase + 0x3c))
 
 def clearvars():
@@ -350,6 +356,13 @@ def getModulesFromPEB():
 	global PEBModList
 	peb = getPEBInfo()
 	imagenames = []
+	# http://www.nirsoft.net/kernel_struct/vista/PEB.html
+	# http://www.nirsoft.net/kernel_struct/vista/PEB_LDR_DATA.html
+	# http://www.nirsoft.net/kernel_struct/vista/LDR_DATA_TABLE_ENTRY.html
+	# The usage of _LDR_DATA_TABLE_ENTRY.SizeOfImage is very confusing and appears to actually contain the module base
+	offset = 0x20
+	if arch == 64:
+		offset = 0x40
 	moduleLst = pykd.typedVarList(peb.Ldr.deref().InLoadOrderModuleList, "ntdll!_LDR_DATA_TABLE_ENTRY", "InMemoryOrderLinks.Flink")
 	if len(PEBModList) == 0:
 		for mod in moduleLst:
@@ -378,7 +391,8 @@ def getModulesFromPEB():
 
 			if imagename in imagenames:
 				# duplicate name ?  Append _<baseaddress>
-				baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
+				# mod.getAddress() + offset = _LDR_DATA_TABLE_ENTRY.SizeOfImage
+				baseaddy = int(pykd.ptrPtr(mod.getAddress() + offset))
 				imagename = imagename+"_%08x" % baseaddy
 
 			# check if module can be loaded
@@ -386,7 +400,8 @@ def getModulesFromPEB():
 				modcheck = pykd.module(imagename)
 			except:
 				# change to image+baseaddress
-				baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
+				# mod.getAddress() + offset = _LDR_DATA_TABLE_ENTRY.SizeOfImage
+				baseaddy = int(pykd.ptrPtr(mod.getAddress() + offset))
 				imagename = "image%08x" % baseaddy
 				try:
 					modcheck = pykd.module(imagename)
@@ -429,6 +444,10 @@ def getModulesFromPEB():
 	return moduleLst
 
 def getModuleFromAddress(address):
+
+	offset = 0x20
+	if arch == 64:
+		offset = 0x40
 
 	global ModuleCache
 	# try fastest way first
@@ -490,7 +509,8 @@ def getModuleFromAddress(address):
 						cnt += 1
 					thismodname = thismodname.strip(".")					
 				if thismodname.lower() == modulename.lower():
-					baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
+					# mod.getAddress() + offset = _LDR_DATA_TABLE_ENTRY.SizeOfImage
+					baseaddy = int(pykd.ptrPtr(mod.getAddress() + offset))
 					baseaddr = "%08x" % baseaddy
 					lmcommand = pykd.dbgCommand("lm")
 					lmlines = lmcommand.split("\n")
@@ -565,30 +585,23 @@ class Debugger:
 		return vaddr
 
 	def rVirtualAlloc(self, lpAddress, dwSize, flAllocationType, flProtect):
-		PROCESS_ALL_ACCESS = ( 0x000F0000 | 0x00100000 | 0xFFF )
+		PROCESS_VM_OPERATION = 0x0008
 		kernel32 = ctypes.windll.kernel32
-		pid = pykd.getCurrentProcessId()
-		hprocess = kernel32.OpenProcess( PROCESS_ALL_ACCESS, False, pid )
+		pid = self.getDebuggedPid()
+		hprocess = kernel32.OpenProcess( PROCESS_VM_OPERATION, False, pid )
 		vaddr = kernel32.VirtualAllocEx(hprocess, lpAddress, dwSize, flAllocationType, flProtect)
+		kernel32.CloseHandle(hprocess)
 		return vaddr
 
 	def rVirtualProtect(self, lpAddress, dwSize, flNewProtect, lpflOldProtect = 0):
-		origbytes = ""
-		mustrestore = False
-		if lpflOldProtect == 0:
-			# set it to lpAddress and restore lpAddress later on
-			mustrestore = True
-			lpflOldProtect = lpAddress
-			origbytes = self.readMemory(lpAddress,4)
-		if lpflOldProtect > 0:
-			PROCESS_ALL_ACCESS = ( 0x000F0000 | 0x00100000 | 0xFFF )
-			kernel32 = ctypes.windll.kernel32
-			pid = pykd.getCurrentProcessId()
-			hprocess = kernel32.OpenProcess( PROCESS_ALL_ACCESS, False, pid )
-			returnval = kernel32.VirtualProtectEx(hprocess, lpAddress, dwSize, flNewProtect, lpflOldProtect)
-			if mustrestore:
-				self.writeMemory(lpAddress,origbytes)
-			return returnval
+		PROCESS_VM_OPERATION = 0x0008
+		kernel32 = ctypes.windll.kernel32
+		pid = self.getDebuggedPid()
+		hprocess = kernel32.OpenProcess(PROCESS_VM_OPERATION, False, pid)
+		pold_protect = ctypes.addressof(ctypes.c_int32(0))
+		returnval = kernel32.VirtualProtectEx(hprocess, lpAddress, dwSize, flNewProtect, pold_protect)
+		kernel32.CloseHandle(hprocess)
+		return returnval
 
 
 	def getAddress(self, functionname):
@@ -841,19 +854,26 @@ class Debugger:
 	"""
 	
 	def getDebuggedName(self):
+		# http://www.nirsoft.net/kernel_struct/vista/PEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/RTL_USER_PROCESS_PARAMETERS.html
 		peb = getPEBInfo()
 		ProcessParameters = peb.ProcessParameters
-		ImageFile = ProcessParameters + 0x3c
-		pImageFile = pykd.ptrDWord(ImageFile)
-		sImageFile = pykd.loadWStr(pImageFile).encode("utf8")
+		offset = 0x38
+		if arch == 64:
+			offset = 0x60
+		# ProcessParameters + offset = _RTL_USER_PROCESS_PARAMETERS.ImagePathName(_UNICODE_STRING)
+		sImageFile = pykd.loadUnicodeString(ProcessParameters + offset).encode("utf8")
 		sImageFilepieces = sImageFile.split("\\")
 		return sImageFilepieces[len(sImageFilepieces)-1]
 		
 	def getDebuggedPid(self):
+		# http://www.nirsoft.net/kernel_struct/vista/TEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/CLIENT_ID.html
 		teb = getTEBAddress()
 		offset = 0x20
 		if arch == 64:
 			offset = 0x40
+		# _TEB.ClientId(CLIENT_ID).UniqueProcess(PVOID)
 		pid = pykd.ptrDWord(teb+offset)
 		return pid
 
@@ -889,7 +909,7 @@ class Debugger:
 			regs.append("RIP")
 		reginfo = {}
 		for thisreg in regs:
-			reginfo[thisreg.upper()] = int(pykd.reg(thisreg))
+			reginfo[thisreg.upper()] = int(pykd.reg(thisreg.lower()))
 		return reginfo
 	
 
@@ -910,14 +930,24 @@ class Debugger:
 	"""
 
 	def getSehChain(self):
+		# http://www.nirsoft.net/kernel_struct/vista/TEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/NT_TIB.html
+		# http://www.nirsoft.net/kernel_struct/vista/EXCEPTION_REGISTRATION_RECORD.html
+
+		# x64 has no SEH chain
+		if arch == 64:
+			return []
 		sehchain = []
 		# get top of chain
 		teb = getTEBAddress()
-		nextrecord = pykd.ptrDWord(teb)
+		# _TEB.NtTib(NT_TIB).ExceptionList(PEXCEPTION_REGISTRATION_RECORD)
+		nextrecord = pykd.ptrPtr(teb)
 		validrecord = True
 		while nextrecord != 0xffffffff and pykd.isValid(nextrecord):
-			nseh = pykd.ptrDWord(nextrecord)
-			seh = pykd.ptrDWord(nextrecord+4)
+			# _EXCEPTION_REGISTRATION_RECORD.Next(PEXCEPTION_REGISTRATION_RECORD)
+			nseh = pykd.ptrPtr(nextrecord)
+			# _EXCEPTION_REGISTRATION_RECORD.Handler(PEXCEPTION_DISPOSITION)
+			seh = pykd.ptrPtr(nextrecord+4)
 			sehrecord = [nextrecord,seh]
 			sehchain.append(sehrecord)
 			nextrecord = nseh
@@ -938,7 +968,7 @@ class Debugger:
 			try:
 				return pykd.loadCStr(location)
 			except pykd.MemoryException:
-				return pykd.loadChars(location,0x100)
+				return pykd.loadChars(location, 0x100)
 			except:
 				return ""
 		else:
@@ -949,7 +979,7 @@ class Debugger:
 			try:
 				return pykd.loadWStr(location)
 			except pykd.MemoryException:
-				return pykd.oadWChars(location,0x100)
+				return pykd.loadWChars(location, 0x100)
 			except:
 				return ""
 		return
@@ -968,12 +998,9 @@ class Debugger:
 
 
 	def writeMemory(self,location,data):
-		putback = "eb 0x%08x" % location
-		thisbyte = ""
-		for origbyte in data:
-			thisbyte = bin2hex(origbyte)
-			putback += " %s" % thisbyte
-		self.nativeCommand(putback)
+		A = array.array('B')
+		A.fromstring(data)
+		pykd.writeBytes(location, A.tolist())
 		return
 
 	def writeLong(self,location,dword):
@@ -1024,12 +1051,19 @@ class Debugger:
 		return 0
 
 	def getHeapsAddress(self):
+		# http://www.nirsoft.net/kernel_struct/vista/PEB.html
 		allheaps = []
 		peb = getPEBInfo()
-		nrofheaps = int(pykd.ptrDWord(peb+0x88))
+		offset = 0x88
+		if arch == 64:
+			offset = 0xe8
+		# _PEB.NumberOfHeaps(ULONG)
+		nrofheaps = int(pykd.ptrDWord(peb+offset))
+		# _PEB.ProcessHeaps(VOID**)
 		processheaps = int(peb.ProcessHeaps)
 		for i in xrange(nrofheaps):
-			nextheap = pykd.ptrDWord(processheaps + (i*4))
+			# _PEB.ProcessHeaps[i](VOID*)
+			nextheap = pykd.ptrPtr(processheaps + (i*(arch/8)))
 			if nextheap == 0x00000000:
 				break
 			if not nextheap in allheaps:
@@ -1132,6 +1166,12 @@ class Debugger:
 
 
 	def getImageNameForModule(self,modulename):
+		# http://www.nirsoft.net/kernel_struct/vista/PEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/PEB_LDR_DATA.html
+		# http://www.nirsoft.net/kernel_struct/vista/LDR_DATA_TABLE_ENTRY.html
+		offset = 0x20
+		if arch == 64:
+			offset = 0x40
 		try:
 			imagename = ""
 			moduleLst = getModulesFromPEB()
@@ -1141,7 +1181,8 @@ class Debugger:
 				thismodname = modparts[len(modparts)-1]
 				moduleparts = thismodname.split(".")
 				if thismodname.lower() == modulename.lower():
-					baseaddy = int(pykd.ptrDWord(mod.getAddress() + 0x20))
+					# mod.getAddress() + offset = _LDR_DATA_TABLE_ENTRY.SizeOfImage
+					baseaddy = int(pykd.ptrPtr(mod.getAddress() + offset))
 					baseaddr = "%08x" % baseaddy
 					lmcommand = self.nativeCommand("lm")
 					lmlines = lmcommand.split("\n")
@@ -1481,6 +1522,8 @@ class wmodule:
 		# enumerate IAT and EAT and put into a symbol object
 		ntHeader = getNtHeaders(self.modbase)
 		pSize = 4
+		if arch == 64:
+			pSize = 8
 		iatlist = self.getIATList(ntHeader,pSize)
 		symbollist = {}
 		for iatEntry in iatlist:
@@ -1498,6 +1541,8 @@ class wmodule:
 		return symbollist
 
 	def getIATList(self,ntHeader, pSize):
+		# If Import Address Table Directory (DataDirectory[12]) is set this will work.
+		# The fallback case of Import Directory (DataDirectory[1]) will produce garbage.
 		iatlist = {}
 		iatdir = ntHeader.OptionalHeader.DataDirectory[12]
 		if iatdir.Size == 0:
@@ -1505,7 +1550,7 @@ class wmodule:
 		if iatdir.Size > 0:
 			iatAddr = self.modbase + iatdir.VirtualAddress
 			for i in range(0, iatdir.Size / pSize):
-				iatEntry = pykd.ptrDWord(iatAddr + i*pSize)
+				iatEntry = pykd.ptrPtr(iatAddr + i*pSize)
 				if iatEntry != None and iatEntry != 0:
 					symbolName = pykd.findSymbol(iatEntry)
 					if "!" in symbolName:
@@ -1513,14 +1558,20 @@ class wmodule:
 		return iatlist
 					
 	def getEATList(self,ntHeader, pSize):
+		# http://www.pinvoke.net/default.aspx/Structures.IMAGE_EXPORT_DIRECTORY
 		eatlist = {}
 		if ntHeader.OptionalHeader.DataDirectory[0].Size > 0:
 			eatAddr = self.modbase + ntHeader.OptionalHeader.DataDirectory[0].VirtualAddress
+			# eatAddr + 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames(DWORD)
 			nr_of_names = pykd.ptrDWord(eatAddr + 0x18)
+			# eatAddr + 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames(DWORD)
 			rva_of_names = self.modbase + pykd.ptrDWord(eatAddr + 0x20)
+			# eatAddr + 0x1c = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions(DWORD)
 			address_of_functions = self.modbase + pykd.ptrDWord(eatAddr + 0x1c)
 			for i in range (0, nr_of_names):
+				# IMAGE_EXPORT_DIRECTORY.AddressOfNames[i](DWORD)
 				eatName = pykd.loadCStr(self.modbase + pykd.ptrDWord(rva_of_names + 4 * i))
+				# IMAGE_EXPORT_DIRECTORY.AddressOfFunctions[i](DWORD)
 				eatAddress = self.modbase + pykd.ptrDWord(address_of_functions + 4*i)
 				eatlist[eatName] = eatAddress
 		return eatlist
@@ -1531,10 +1582,13 @@ class wmodule:
 		sectionsize = 40
 		sizeOptionalHeader = int(ntHeader.FileHeader.SizeOfOptionalHeader)
 		for sectioncnt in xrange(nrsections):
+			# IMAGE_SECTION_HEADER[i]
 			sectionstart = (ntHeader.OptionalHeader.getAddress() + sizeOptionalHeader) + (sectioncnt*sectionsize)
-			thissection = pykd.loadCStr(sectionstart)
+			thissection = pykd.loadChars(sectionstart, 8).rstrip('\0')
 			if thissection == sectionname:
+				# IMAGE_SECTION_HEADER.SizeOfRawData(DWORD)
 				thissectionsize = pykd.ptrDWord(sectionstart + 0x8 + 0x8)
+				# IMAGE_SECTION_HEADER.VirtualAddress(DWORD)
 				thissectionrva = pykd.ptrDWord(sectionstart + 0x4 + 0x8)
 				thissectionstart = self.modbase + thissectionrva
 				return thissectionstart
@@ -1672,8 +1726,10 @@ class wpage():
 					sizeOptionalHeader = int(ntHeader.FileHeader.SizeOfOptionalHeader)
 					for sectioncnt in xrange(nrsections):
 						sectionstart = (ntHeader.OptionalHeader.getAddress() + sizeOptionalHeader) + (sectioncnt*sectionsize)
-						thissection = pykd.loadCStr(sectionstart)
+						thissection = pykd.loadChars(sectionstart, 8).rstrip('\0')
+						# IMAGE_SECTION_HEADER.SizeOfRawData(DWORD)
 						thissectionsize = pykd.ptrDWord(sectionstart + 0x8 + 0x8)
+						# IMAGE_SECTION_HEADER.VirtualAddress(DWORD)
 						thissectionrva = pykd.ptrDWord(sectionstart + 0x4 + 0x8)
 						thissectionstart = thismodbase + thissectionrva
 						thissectionend = thissectionstart + thissectionsize
@@ -1851,10 +1907,13 @@ class wthread:
 		return self.address
 
 	def getId(self):
+		# http://www.nirsoft.net/kernel_struct/vista/TEB.html
+		# http://www.nirsoft.net/kernel_struct/vista/CLIENT_ID.html
 		teb = self.getTEB()
 		offset = 0x24
 		if arch == 64:
 			offset = 0x48
+		# _TEB.ClientId(CLIENT_ID).UniqueThread(PVOID)
 		tid = pykd.ptrDWord(teb+offset)
 		return tid
 
