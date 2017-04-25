@@ -1215,7 +1215,7 @@ class Debugger:
 
 	def disasmForward(self,address,depth=0):
 		# go to correct location
-		cmd2run = "u 0x%08x L%d" % (address,depth+1)
+		cmd2run = "u 0x%08x L%x" % (address,depth+1)
 		try:
 			disasmlist = pykd.dbgCommand(cmd2run)
 			disasmLinesTmp = disasmlist.split("\n")
@@ -1245,7 +1245,7 @@ class Debugger:
 
 	def disasmBackward(self,address,depth):
 		while True:
-			cmd2run = "ub 0x%08x L%d" % (address,depth)
+			cmd2run = "ub 0x%08x L%x" % (address,depth)
 			try:
 				disasmlist = pykd.dbgCommand(cmd2run)
 				disasmLinesTmp = disasmlist.split("\n")
