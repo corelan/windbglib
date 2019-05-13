@@ -1,5 +1,5 @@
 """
-Copyright (c) 2011-2017, Peter Van Eeckhoutte - Corelan GCV
+Copyright (c) 2011-2019, Peter Van Eeckhoutte - Corelan Consulting BVBA
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 143 $
-$Id: windbglib.py 143 2017-04-02 07:14:58Z corelanc0d3r $ 
+$Revision: 144 $
+$Id: windbglib.py 144 2019-05-13 06:00:00Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -552,6 +552,21 @@ def getModuleFromAddress(address):
 				return thismod			
 
 	return None
+
+def getImageBaseOnDisk(fullpath):
+	with open(fullpath, "rb") as pe: 
+		data = pe.read()
+		nt_header_offset = struct.unpack("<I", data[0x3c:0x40])[0]
+		optional_header_offset = nt_header_offset + 0x18
+		magic = struct.unpack("<H", data[optional_header_offset:optional_header_offset+2])[0]
+		if magic == 0x10b:
+			#32bit
+			imageBase = struct.unpack("<I", data[optional_header_offset+28:optional_header_offset+28+4])[0]
+		else:
+			# 64bit
+			imageBase = struct.unpack("<Q", data[optional_header_offset+24:optional_header_offset+24+8])[0]
+	return imageBase
+
 
 
 # Classes
@@ -1089,6 +1104,7 @@ class Debugger:
 	def getModule(self,modulename):
 		wmod = None
 		self.origmodname = modulename
+		fullpath = ""
 		if len(PEBModList) == 0:
 			getModulesFromPEB()
 		try:
@@ -1096,7 +1112,7 @@ class Debugger:
 			if modulename in PEBModList:
 				modentry = PEBModList[modulename]
 				thismod = pykd.module(modulename)
-			
+				fullpath = modentry[1]
 			else:
 				# find a good one
 				for modentry in PEBModList:
@@ -1105,6 +1121,7 @@ class Debugger:
 					# 1 : path
 					if modulename == modrecord[0]:
 						thismod = pykd.module(modentry)
+						fullpath = modrecord[1]
 						break
 
 			if thismod == None:
@@ -1127,7 +1144,8 @@ class Debugger:
 			except:
 				thismodversion = ""
 			ntHeader = getNtHeaders(thismodbase)
-			preferredbase = ntHeader.OptionalHeader.ImageBase
+			#preferredbase = ntHeader.OptionalHeader.ImageBase
+			preferredbase = getImageBaseOnDisk(fullpath)
 			entrypoint = ntHeader.OptionalHeader.AddressOfEntryPoint
 			codebase = ntHeader.OptionalHeader.BaseOfCode
 			if getArchitecture() == 64:
