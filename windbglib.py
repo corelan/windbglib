@@ -1,5 +1,5 @@
 """
-Copyright (c) 2011-2019, Peter Van Eeckhoutte - Corelan Consulting BVBA
+Copyright (c) 2011-2020, Peter Van Eeckhoutte - Corelan Consulting bv
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 144 $
-$Id: windbglib.py 144 2019-05-13 06:00:00Z corelanc0d3r $ 
+$Revision: 145 $
+$Id: windbglib.py 145 2020-03-27 16:00:00Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -131,36 +131,36 @@ def getPEBInfo():
 		return pykd.typedVar("ntdll!_PEB", pykd.getCurrentProcess())
 	except:
 		currversion = getPyKDVersion()
-		print ""
-		print " Oops - It seems that PyKD was unable problem to get the PEB object."
-		print " This usually means that"
-		print "  1. msdiaxxx.dll has not been registered correctly    and/or"
-		print "  2. symbols are missing for ntdll.dll"
-		print ""
-		print " Possible solutions:"
-		print " -------------------"
-		print " 1. Re-register the VC runtime library:"
-		print "    * For PyKd v%s:" % currversion
+		print("")
+		print(" Oops - It seems that PyKD was unable problem to get the PEB object.")
+		print(" This usually means that")
+		print("  1. msdiaxxx.dll has not been registered correctly    and/or")
+		print("  2. symbols are missing for ntdll.dll")
+		print("")
+		print(" Possible solutions:")
+		print(" -------------------")
+		print(" 1. Re-register the VC runtime library:")
+		print("    * For PyKd v%s:" % currversion)
 		if currversion.startswith("0.2"):
-			print "      (Re)Install the x86 VC++ Redistributable Package for Visual Studio 2008"
-			print "       (https://www.microsoft.com/en-us/download/details.aspx?id=29)"
-			print "      Next, run the following command from an administrator prompt:"
-			print "        (x86) regsvr32.exe \"%ProgramFiles%\\Common Files\\microsoft shared\\VC\\msdia90.dll\"\n"
-			print "        (x64) regsvr32.exe \"%ProgramFiles(x86)%\\Common Files\\microsoft shared\\VC\\msdia90.dll\"\n"
+			print("      (Re)Install the x86 VC++ Redistributable Package for Visual Studio 2008")
+			print("       (https://www.microsoft.com/en-us/download/details.aspx?id=29)")
+			print("      Next, run the following command from an administrator prompt:")
+			print("        (x86) regsvr32.exe \"%ProgramFiles%\\Common Files\\microsoft shared\\VC\\msdia90.dll\"\n")
+			print("        (x64) regsvr32.exe \"%ProgramFiles(x86)%\\Common Files\\microsoft shared\\VC\\msdia90.dll\"\n")
 		else:
-			print "      Either install Visual Studio 2013, or get a copy of msdia120.dll and register it manually\n"
-			print "      You can find a copy of msdia120.dll inside the pykd.zip file inside the github repository"
-			print "      (Use at your own risk!).  Place the file in the correct 'VC' folder and run regsvr32 from an administrative prompt:"
-			print "        (x86) regsvr32.exe \"%ProgramFiles%\\Common Files\\microsoft shared\\VC\\msdia120.dll\"\n"
-			print "        (x64) regsvr32.exe \"%ProgramFiles(x86)%\\Common Files\\microsoft shared\\VC\\msdia120.dll\"\n"
+			print("      Either install Visual Studio 2013, or get a copy of msdia120.dll and register it manually\n")
+			print("      You can find a copy of msdia120.dll inside the pykd.zip file inside the github repository")
+			print("      (Use at your own risk!).  Place the file in the correct 'VC' folder and run regsvr32 from an administrative prompt:")
+			print("        (x86) regsvr32.exe \"%ProgramFiles%\\Common Files\\microsoft shared\\VC\\msdia120.dll\"\n")
+			print("        (x64) regsvr32.exe \"%ProgramFiles(x86)%\\Common Files\\microsoft shared\\VC\\msdia120.dll\"\n")
 
-		print " 2. Force download of the Symbols for ntdll.dll"
-		print "    * Connect to the internet, and verify that the symbol path is configured correctly"
-		print "      Assuming that the local symbol path is set to c:\\symbols,"  
-		print "      run the following command from within the windbg application folder"
-		print "        symchk /r c:\\windows\\system32\\ntdll.dll /s SRV*c:\\symbols*http://msdl.microsoft.com/download/symbols"
-		print ""
-		print " Restart windbg and try again"
+		print(" 2. Force download of the Symbols for ntdll.dll")
+		print("    * Connect to the internet, and verify that the symbol path is configured correctly")
+		print("      Assuming that the local symbol path is set to c:\\symbols,"  )
+		print("      run the following command from within the windbg application folder")
+		print("        symchk /r c:\\windows\\system32\\ntdll.dll /s SRV*c:\\symbols*http://msdl.microsoft.com/download/symbols")
+		print("")
+		print(" Restart windbg and try again")
 		exit(1)
 
 def getPEBAddress():
@@ -322,34 +322,34 @@ def checkVersion():
 		pykdversion_needed = "0.2.0.29"
 	currversion = getPyKDVersion()
 	if not isPyKDVersionCompatible(currversion,pykdversion_needed):
-		print "*******************************************************************************************"
-		print "  You are running the wrong version of PyKD, please update "
-		print "   Installed version : %s " % currversion
-		print "   Required version : %s" % pykdversion_needed
-		print "  You can get an updated PyKD version from one of the following sources:"
-		print "   - %s (preferred)" % pykdurl
-		print "     (unzip with 7zip)"
-		print "   - http://pykd.codeplex.com (newer versions may not work !)"
-		print "*******************************************************************************************"
+		print("*******************************************************************************************")
+		print("  You are running the wrong version of PyKD, please update ")
+		print("   Installed version : %s " % currversion)
+		print("   Required version : %s" % pykdversion_needed)
+		print("  You can get an updated PyKD version from one of the following sources:")
+		print("   - %s (preferred)" % pykdurl)
+		print("     (unzip with 7zip)")
+		print("   - http://pykd.codeplex.com (newer versions may not work !)")
+		print("*******************************************************************************************")
 		import sys
 		sys.exit()
 		return
 	if pykdversion_needed != currversion:
 		# version must be higher
-		print "*******************************************************************************************"
-		print " You are running a newer version of pykd.pyd"
-		print " mona.py was tested against v%s" % pykdversion_needed
-		print " and not against v%s" % currversion
-		print " This version may not work properly."
-		print " If you are having issues, I recommend to download the correct version from"
-		print "   %s" % pykdurl
-		print "   (unzip with 7zip)"
+		print("*******************************************************************************************")
+		print(" You are running a newer version of pykd.pyd")
+		print(" mona.py was tested against v%s" % pykdversion_needed)
+		print(" and not against v%s" % currversion)
+		print(" This version may not work properly.")
+		print(" If you are having issues, I recommend to download the correct version from")
+		print("   %s" % pykdurl)
+		print("   (unzip with 7zip)")
 		if currversion.startswith("0.3"):
-			print ""
-			print " NOTE: PyKD v%s requires msdia120.dll, which only gets installed via Visual Studio 2013 (yup, I know)" % currversion
-			print " Alternatively, you can use the copy of msdia120.dll from the pykd.pyd file"
-			print "  (%s), but use this file at your own risk" % pykdurl03
-		print "*******************************************************************************************"		
+			print("")
+			print(" NOTE: PyKD v%s requires msdia120.dll, which only gets installed via Visual Studio 2013 (yup, I know)" % currversion)
+			print(" Alternatively, you can use the copy of msdia120.dll from the pykd.pyd file")
+			print("  (%s), but use this file at your own risk" % pykdurl03)
+		print("*******************************************************************************************")
 	return
 
 def getModulesFromPEB():
@@ -427,14 +427,14 @@ def getModulesFromPEB():
 						try:
 							modcheck = pykd.module(imagename)
 						except:
-							print ""
-							print "   *** Error parsing module '%s' ('%s') at 0x%08x ***" % (imagename,modulename,baseaddy)
-							print "   *** Please open a github issue ticket at https://github.com/corelan/windbglib ***"
-							print "   *** and provide the output of the following 2 windbg commands in the ticket: ***"
-							print "         lm"
-							print "         !peb"
-							print "   *** Thanks"
-							print ""
+							print("")
+							print("   *** Error parsing module '%s' ('%s') at 0x%08x ***" % (imagename,modulename,baseaddy))
+							print("   *** Please open a github issue ticket at https://github.com/corelan/windbglib ***")
+							print("   *** and provide the output of the following 2 windbg commands in the ticket: ***")
+							print("         lm")
+							print("         !peb")
+							print("   *** Thanks")
+							print("")
 							addtolist = False
 
 			if addtolist:
@@ -722,6 +722,13 @@ class Debugger:
 		self.AsmCache["pushad"] = "\x60"
 		self.AsmCache["popad"] = "\x61"
 
+		try:
+   			# Python 2
+			xrange
+		except NameError:
+			# Python 3, xrange is now named range
+			xrange = range
+
 		for offset in xrange(4,80,4):
 			thisasm = "\x83\xc4" + hex2bin("%02x" % offset)
 			self.AsmCache["add esp,%02x" % offset] = thisasm
@@ -877,7 +884,8 @@ class Debugger:
 		if arch == 64:
 			offset = 0x60
 		# ProcessParameters + offset = _RTL_USER_PROCESS_PARAMETERS.ImagePathName(_UNICODE_STRING)
-		sImageFile = pykd.loadUnicodeString(ProcessParameters + offset).encode("utf8")
+		# sImageFile = pykd.loadUnicodeString(ProcessParameters + offset).encode("utf8")
+		sImageFile = pykd.loadUnicodeString(int(ProcessParameters) + offset).encode("utf8")
 		sImageFilepieces = sImageFile.split("\\")
 		return sImageFilepieces[len(sImageFilepieces)-1]
 		
@@ -1076,6 +1084,13 @@ class Debugger:
 		nrofheaps = int(pykd.ptrDWord(peb+offset))
 		# _PEB.ProcessHeaps(VOID**)
 		processheaps = int(peb.ProcessHeaps)
+		try:
+   			# Python 2
+			xrange
+		except NameError:
+			# Python 3, xrange is now named range
+			xrange = range
+
 		for i in xrange(nrofheaps):
 			# _PEB.ProcessHeaps[i](VOID*)
 			nextheap = pykd.ptrPtr(processheaps + (i*(arch/8)))
@@ -1599,6 +1614,13 @@ class wmodule:
 		nrsections = int(ntHeader.FileHeader.NumberOfSections)
 		sectionsize = 40
 		sizeOptionalHeader = int(ntHeader.FileHeader.SizeOfOptionalHeader)
+		try:
+   			# Python 2
+			xrange
+		except NameError:
+			# Python 3, xrange is now named range
+			xrange = range
+
 		for sectioncnt in xrange(nrsections):
 			# IMAGE_SECTION_HEADER[i]
 			sectionstart = (ntHeader.OptionalHeader.getAddress() + sizeOptionalHeader) + (sectioncnt*sectionsize)
@@ -1742,6 +1764,13 @@ class wpage():
 					nrsections = int(ntHeader.FileHeader.NumberOfSections)
 					sectionsize = 40
 					sizeOptionalHeader = int(ntHeader.FileHeader.SizeOfOptionalHeader)
+					try:
+						# Python 2
+						xrange
+					except NameError:
+						# Python 3, xrange is now named range
+						xrange = range
+
 					for sectioncnt in xrange(nrsections):
 						sectionstart = (ntHeader.OptionalHeader.getAddress() + sizeOptionalHeader) + (sectioncnt*sectionsize)
 						thissection = pykd.loadChars(sectionstart, 8).rstrip('\0')
