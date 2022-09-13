@@ -45,6 +45,8 @@ import traceback
 import pickle
 import ctypes
 import array
+import re
+import pdb
 
 global MemoryPages
 global AsmCache
@@ -69,7 +71,7 @@ Registers64BitsOrder = ["RAX", "RCX", "RDX", "RBX", "RSP", "RBP", "RSI", "RDI",
 if pykd.is64bitSystem():
 	arch = 64
 
-
+TOP_USERLAND = 0x7fffffff if arch == 32 else 0x7FFFFFFFFFFF
 # Utility functions
 
 def getOSVersion():
@@ -226,7 +228,7 @@ def addrToInt(address):
 	int - the address value
 	"""
 	
-	address = address.replace("\\x","")
+	address = address.replace("\\x","").replace('`', '')
 	return hexStrToInt(address)
 
 def isAddress(address):
@@ -245,11 +247,19 @@ def isAddress(address):
 
 	return set(address.upper()) <= set("ABCDEF1234567890")
 
-def intToHex(address):
+def intToHex(address, prefix='0x'):
 	if arch == 32:
-		return "0x%08x" % address
+		return prefix + "0x%08x" % address
 	if arch == 64:
-		return "0x%016x" % address
+		return prefix + "0x%016x" % address
+
+def intToHexWinDbgFormat(address):
+	if arch == 32:
+		return "%08x" % address
+	if arch == 64:
+		formatted_hex = "%016x" % address
+		formatted_hex = formatted_hex[:8] + '`' + formatted_hex[8:]
+		return formatted_hex
 
 def toHexByte(n):
 	"""
@@ -925,10 +935,10 @@ class Debugger:
 	def getRegs(self):
 		regs = []
 		if arch == 32:
-			regs = Registers32BitsOrder
+			regs = Registers32BitsOrder[:]
 			regs.append("EIP")
 		if arch == 64:
-			regs = Registers64BitsOrder
+			regs = Registers64BitsOrder[:]
 			regs.append("RIP")
 		reginfo = {}
 		for thisreg in regs:
@@ -1033,20 +1043,25 @@ class Debugger:
 
 
 	def getMemoryPages(self):
-		offset = 0
-		endaddress = 0x7fffffff
-		#pagesize = pageSize()
-		if len(self.MemoryPages) == 0:
-			while offset < endaddress:
-				try:
-					startaddress,pagesize = pykd.findMemoryRegion(offset)
-					pageobj = wpage(startaddress,pagesize)
-					if not startaddress in self.MemoryPages:
-						self.MemoryPages[startaddress] = pageobj
-					offset += pagesize
-				except:
-					offset += 0x1000
+		if not self.MemoryPages:
+			address_output = pykd.dbgCommand('!address')
+			address_output_lines = address_output.split('\n')
+			info_delimiter = '-' * 122
+			try:
+				info_delimiter_index = address_output_lines.index(info_delimiter)
+			except ValueError:
+				pykd.dprintln('Could not parse !address command output while trying to list memory pages.')
+				return self.MemoryPages
+			#[u'', u'BaseAddress', u'EndAddress+1', u'RegionSize', u'Type', u'State', u'Protect', u'Usage']
+			for memory_page_info in address_output_lines[info_delimiter_index + 1:]:
+				info = re.compile(r'[\s+]+').split(memory_page_info)
+				if len(info) > 1:
+					starting_address = int(info[1].replace('`', ''), base=16)
+					size = int(info[3].replace('`', ''), base=16)
+					page_obj = wpage(starting_address, size)
+					self.MemoryPages[starting_address] = page_obj
 		return self.MemoryPages
+
 
 	def getMemoryPageByAddress(self,address):
 		if len(self.MemoryPages) == 0:
@@ -1259,7 +1274,7 @@ class Debugger:
 			lineindex = len(disasmLines)-1
 			if lineindex > -1:
 				asmline = disasmLines[lineindex]
-				pointer = asmline[0:8]
+				pointer = asmline[0:8] if arch == 32 else asmline.replace('`', '')[0:16]
 				if pointer > address:
 					return self.getOpcode(hexStrToInt(pointer))
 				else:
@@ -1289,8 +1304,8 @@ class Debugger:
 				lineindex = len(disasmLines)-depth
 				if lineindex > -1:
 					asmline = disasmLines[lineindex]
-					pointer = asmline[0:8]
-					return self.getOpcode(hexStrToInt(pointer))
+					pointer = asmline[0:8] if arch == 32 else asmline[0:17]
+					return self.getOpcode(addrToInt(pointer))
 				else:
 					return self.getOpcode(address)
 			except:
@@ -1302,7 +1317,7 @@ class Debugger:
 
 	def assemble(self,instructions):
 		allbytes = ""
-		address = pykd.reg("eip")
+		address = pykd.reg("eip") if arch == 32 else pykd.reg("rip")
 		if not pykd.isValid(address):
 			# assemble somewhere else - let's say at the ntdll entrypoint
 			thismod = pykd.module("ntdll")
@@ -1881,20 +1896,11 @@ class opcode:
 
 			disasmlines = pykd.dbgCommand("u 0x%08x L 1" % self.address)
 			for thisline in disasmlines.split("\n"):
-				if thisline.lower().startswith("%08x" % self.address):
+				if thisline.lower().startswith(intToHexWinDbgFormat(self.address)):
 					disasmdata = thisline
 					break
 			if disasmdata != "":
-				# 0 -> 7 : address
-				# 8 : space
-				# 9 -> 24 : bytes
-				# 25 -> end : instruction
-				if len(disasmdata) > 25:
-					self.instruction = disasmdata[25:len(disasmdata)]
-					self.dumpdata = disasmdata[9:24].replace(" ","")
-					self.opsize = len(self.dumpdata) / 2
-				addressstring = disasmdata[0:8]
-				self.address = addrToInt(addressstring)
+				self.parseDisasm(disasmdata)
 				self.instruction = self.instruction.replace("   "," ").replace("  "," ")
 				# sanitize instruction to make output immlib compatible. Ugly. A bit.
 				instructionpieces = self.instruction.split(" ")
@@ -1934,6 +1940,28 @@ class opcode:
 					self.instruction = self.instruction+ instructionparts[len(instructionparts)-1].strip("H")
 		self.dump = self.instruction
 		return self.instruction
+
+	def parseDisasm(self, disasmdata):
+		if arch == 32:
+			# 0 -> 7 : address
+			# 8 : space
+			# 9 -> 24 : bytes
+			# 25 -> end : instruction
+			if len(disasmdata) > 25:
+				self.instruction = disasmdata[25:len(disasmdata)]
+				self.dumpdata = disasmdata[9:24].replace(" ","")
+				self.opsize = len(self.dumpdata) / 2
+			address_string = disasmdata[0:8]
+			self.address = addrToInt(address_string)
+		else:
+			splitted = disasmdata.split()
+			address_string = splitted[0]
+			self.address = addrToInt(address_string)
+			instruction = ' '.join(splitted[2:])
+			if instruction != '???':
+				self.instruction = instruction
+				self.dumpdata = splitted[1]
+				self.opsize = len(self.dumpdata) / 2
 
 	def getDump(self):
 		if self.dumpdata == "":
