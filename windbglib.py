@@ -46,7 +46,6 @@ import pickle
 import ctypes
 import array
 import re
-import pdb
 
 global MemoryPages
 global AsmCache
@@ -1046,14 +1045,18 @@ class Debugger:
 		if not self.MemoryPages:
 			address_output = pykd.dbgCommand('!address')
 			address_output_lines = address_output.split('\n')
-			info_delimiter = '-' * 122
-			try:
-				info_delimiter_index = address_output_lines.index(info_delimiter)
-			except ValueError:
+			# Before the rows with information, there is a line of 95 dashes (122 on 64 bit)
+			dash_regex = re.compile(r'-{95,}')
+			dash_line_index = -1
+			for index, line in enumerate(address_output_lines):
+				if dash_regex.match(line):
+					dash_line_index = index
+					break
+			if dash_line_index == -1:
 				pykd.dprintln('Could not parse !address command output while trying to list memory pages.')
 				return self.MemoryPages
 			#[u'', u'BaseAddress', u'EndAddress+1', u'RegionSize', u'Type', u'State', u'Protect', u'Usage']
-			for memory_page_info in address_output_lines[info_delimiter_index + 1:]:
+			for memory_page_info in address_output_lines[dash_line_index + 1:]:
 				info = re.compile(r'[\s+]+').split(memory_page_info)
 				if len(info) > 1:
 					starting_address = int(info[1].replace('`', ''), base=16)
