@@ -246,11 +246,11 @@ def isAddress(address):
 
 	return set(address.upper()) <= set("ABCDEF1234567890")
 
-def intToHex(address, prefix='0x'):
+def intToHex(address):
 	if arch == 32:
-		return prefix + "0x%08x" % address
+		return "0x%08x" % address
 	if arch == 64:
-		return prefix + "0x%016x" % address
+		return "0x%016x" % address
 
 def intToHexWinDbgFormat(address):
 	if arch == 32:
