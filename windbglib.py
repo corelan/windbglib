@@ -53,7 +53,7 @@ global InstructionCache
 global PageSections
 global ModuleCache
 global cpebaddress
-global PEBModList 
+global PEBModList
 
 arch = 32
 cpebaddress = 0
@@ -180,7 +180,7 @@ def getTEBAddress():
 		tebline = teblines[0]
 		tebparts = tebline.split(" ")
 		if len(tebparts) > 2:
-			return hexStrToInt(tebparts[2])
+			return hexStrToInt(tebparts[-1])
 	# slow
 	teb = getTEBInfo()
 	return int(teb.Self)
