@@ -1,5 +1,5 @@
 """
-Copyright (c) 2011-2020, Peter Van Eeckhoutte - Corelan Consulting bv
+Copyright (c) 2011-2022, Peter Van Eeckhoutte - Corelan Consulting bv
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 145 $
-$Id: windbglib.py 145 2020-03-27 16:00:00Z corelanc0d3r $ 
+$Revision: 146 $
+$Id: windbglib.py 146 2022-10-09 18:04:00Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
