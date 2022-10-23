@@ -1046,10 +1046,10 @@ class Debugger:
 			address_output = pykd.dbgCommand('!address')
 			address_output_lines = address_output.split('\n')
 			# Before the rows with information, there is a line of 95 dashes (122 on 64 bit)
-			dash_regex = re.compile(r'-{95,}')
+			dash_regex = re.compile(r'^-+$')
 			dash_line_index = -1
 			for index, line in enumerate(address_output_lines):
-				if dash_regex.match(line):
+				if dash_regex.match(line.strip()):
 					dash_line_index = index
 					break
 			if dash_line_index == -1:
