@@ -1049,7 +1049,7 @@ class Debugger:
 			for memory_page_info in address_output_lines:
 				memory_page_info = memory_page_info.strip()
 				if info_regex.match(memory_page_info):
-					info = info.split(' ')
+					info = memory_page_info.split(' ')
 					starting_address = int(info[0].replace('`', ''), base=16)
 					size = int(info[1].replace('`', ''), base=16)
 					page_obj = wpage(starting_address, size)
