@@ -1045,9 +1045,7 @@ class Debugger:
 		if not self.MemoryPages:
 			address_output = pykd.dbgCommand('!address -c:".printf\\"%1 %3 \\\\n\\""')
 			address_output_lines = address_output.split('\n')
-			# Before the rows with information, there is a line of 95 dashes (122 on 64 bit)
 			info_regex = re.compile(r'0x[\da-fA-F]+ 0x[\da-fA-F]+')
-			#[u'', u'BaseAddress', u'EndAddress+1', u'RegionSize', u'Type', u'State', u'Protect', u'Usage']
 			for memory_page_info in address_output_lines:
 				memory_page_info = memory_page_info.strip()
 				if info_regex.match(memory_page_info):
