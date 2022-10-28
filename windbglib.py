@@ -1043,24 +1043,17 @@ class Debugger:
 
 	def getMemoryPages(self):
 		if not self.MemoryPages:
-			address_output = pykd.dbgCommand('!address')
+			address_output = pykd.dbgCommand('!address -c:".printf\\"%1 %3 \\\\n\\""')
 			address_output_lines = address_output.split('\n')
 			# Before the rows with information, there is a line of 95 dashes (122 on 64 bit)
-			dash_regex = re.compile(r'^-+$')
-			dash_line_index = -1
-			for index, line in enumerate(address_output_lines):
-				if dash_regex.match(line.strip()):
-					dash_line_index = index
-					break
-			if dash_line_index == -1:
-				pykd.dprintln('Could not parse !address command output while trying to list memory pages.')
-				return self.MemoryPages
+			info_regex = re.compile(r'0x[\da-fA-F]+ 0x[\da-fA-F]+')
 			#[u'', u'BaseAddress', u'EndAddress+1', u'RegionSize', u'Type', u'State', u'Protect', u'Usage']
-			for memory_page_info in address_output_lines[dash_line_index + 1:]:
-				info = re.compile(r'[\s+]+').split(memory_page_info)
-				if len(info) > 1:
-					starting_address = int(info[1].replace('`', ''), base=16)
-					size = int(info[3].replace('`', ''), base=16)
+			for memory_page_info in address_output_lines:
+				memory_page_info = memory_page_info.strip()
+				if info_regex.match(memory_page_info):
+					info = info.split(' ')
+					starting_address = int(info[0].replace('`', ''), base=16)
+					size = int(info[1].replace('`', ''), base=16)
 					page_obj = wpage(starting_address, size)
 					self.MemoryPages[starting_address] = page_obj
 		return self.MemoryPages
