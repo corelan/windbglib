@@ -29,28 +29,38 @@ To get mona.py up and running under WinDBG, please follow these steps:
 10. Save mona.py under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x86` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x86`   ("Unblock" the file if necessary)
 
 
+---
 
-### Windows 7 and up, 64bit (WinDBG 64 bit) - python 2.7 x64
-1. Download a 64bit version of pykd from https://disk.yandex.ru/d/Ia71qisldISyyw?w=1 (for instance, file pykd-0.3.4.15-cp27-win-amd64.zip)
-(alternatively, compile a 64bit version of pykd yourself, based on the instructions provided on the PyKD homepage: https://githomelab.ru/pykd/pykd (For assistance with compiling PyKD, please contact the PyKD developer)
-2. Put the compiled pykd.pyd under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64\winext` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\winext`
-3. Put msdia140.dll (from the zip file downloaded in step 1) under `C:\Program Files (x86)\Common Files\Microsoft Shared\VC` 
-4. Open a command prompt with administrator privileges and run the following commands:
+### Windows 7 and up, 64bit (WinDBG 64 bit)
+#### Install x64 python and pip
+Python 2.7
+1. Install a recent 64bit version of Python 2.7.x (2.7.14 or higher), verify that it is going to be the default python version.  (Adjust system path if needed) 
+2. Install pip:
+- Download file get-pip.py from https://bootstrap.pypa.io/pip/2.7/get-pip.py
+- Run `python get-pip.py` from an administrator command prompt.
+- If needed, add `c:\Python27\Scripts` to the PATH System environment variable. Close the command prompt and open a new administrator command prompt.
 
-   ```
-   c:
-   cd "C:\Program Files (x86)\Common Files\Microsoft Shared\VC"
-   regsvr32 msdia140.dll
-   (You should get a messagebox indicating that the dll was registered successfully)
-   ```
-5. Install 64bit version of Python 2.7.x (2.7.14 or higher), verify that it is going to be the default python version.  (Adjust system path if needed)
-6. Download windbglib.py from https://github.com/corelan/windbglib/raw/master/windbglib.py 
-7. Save the file under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64`   ("Unblock" the file if necessary)
-8. Download mona.py from https://github.com/corelan/mona/raw/master/mona.py  
-9. Save mona.py under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64`   ("Unblock" the file if necessary)
-10. Run windbg.exe from  `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64`  
+Python 3.x
+1. Install a recent 64bit version of Python 3.x, verify that it is going to be the default python version.  (Adjust system path if needed) 
+2. Install pip:
+- Download file get-pip.py from https://bootstrap.pypa.io/get-pip.py
+- Run `python get-pip.py`
+- If needed, add `c:\Python3\Scripts` to the PATH System environment variable  (check the actual folder name!)
+
+#### Install pykd via pip
+1. Open https://pypi.org/project/pykd/0.3.4.15/#files and check the pip command at the top of the page. Take note of the pykd version that is being mentioned (for instance, 0.3.4.15)
+2. Run `pip install pykd==0.3.4.15` from an administrator command prompt  (replace 0.3.4.15 with the version that is indicated on the page)
+
+#### Install windbglig and mona
+
+1. Download windbglib.py from https://github.com/corelan/windbglib/raw/master/windbglib.py 
+2. Save the file under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64`   ("Unblock" the file if necessary)
+3. Download mona.py from https://github.com/corelan/mona/raw/master/mona.py  
+4. Save mona.py under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64`   ("Unblock" the file if necessary)
+5. Run windbg.exe from  `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64`  
 
 
+---
 
 ### Windows XP, 32bit
 1. Download pykd.zip from https://github.com/corelan/windbglib/raw/master/pykd/pykd.zip and save it to a temporary location on your computer
@@ -71,6 +81,7 @@ To get mona.py up and running under WinDBG, please follow these steps:
 8. Save the file under `C:\Program Files\Debugging Tools for Windows (x86)`   ("Unblock" the file if necessary)
 9. Download mona.py from https://github.com/corelan/mona/raw/master/mona.py  
 10. Save the file under `C:\Program Files\Debugging Tools for Windows (x86)`   ("Unblock" the file if necessary)
+
 
 
 Running
