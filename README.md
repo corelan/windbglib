@@ -31,7 +31,7 @@ To get mona.py up and running under WinDBG, please follow these steps:
 
 
 ### Windows 7 and up, 64bit (WinDBG 64 bit)
-1. Compile a 64bit version of pykd, based on the instructions found on the PyKD homepage: https://githomelab.ru/pykd/pykd
+1. Compile a 64bit version of pykd, based on the instructions provided on the PyKD homepage: https://githomelab.ru/pykd/pykd (For assistance with compiling PyKD, please contact the PyKD developer)
 2. Put the compiled pykd.pyd under `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64\winext` or `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\winext`
 3. Install 64bit version of Python 2.7.x (2.7.14 or higher), verify that it is going to be the default python version
 4. Download windbglib.py from https://github.com/corelan/windbglib/raw/master/windbglib.py 
