@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 149 $
-$Id: windbglib.py 149 2022-10-29 18:04:00Z corelanc0d3r $ 
+$Revision: 150 $
+$Id: windbglib.py 150 2022-10-29 18:04:00Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -338,7 +338,7 @@ def checkVersion():
 		print("  You can get an updated PyKD version from one of the following sources:")
 		print("   - %s (preferred)" % pykdurl)
 		print("     (unzip with 7zip)")
-		print("   - http://pykd.codeplex.com (newer versions may not work !)")
+		print("   - https://githomelab.ru/pykd/pykd (newer versions may not work !)")
 		print("*******************************************************************************************")
 		import sys
 		sys.exit()
