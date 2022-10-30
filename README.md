@@ -81,9 +81,9 @@ Run `pip install pykd`
 10. Save the file under `C:\Program Files\Debugging Tools for Windows (x86)`   ("Unblock" the file if necessary)
 
 
-
-Running
---------
+---
+Running mona
+-------------
 32bit:
 Open Windbg and execute the following command: `.load pykd.pyd`
 
@@ -93,11 +93,13 @@ Open Windbg and execute the following command: `.load pykd`
 
 mona commands can the be accessed by running `!py mona`
 
+---
 
 More info
 ----------
 For more info on using mona.py, consider taking a Corelan Training: https://www.corelan-training.com
 
+---
 
 Notes
 -----
