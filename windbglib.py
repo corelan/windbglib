@@ -345,19 +345,18 @@ def checkVersion():
 		return
 	if pykdversion_needed != currversion:
 		# version must be higher
-		print("*******************************************************************************************")
-		print(" You are running a newer version of pykd.pyd")
-		print(" mona.py was tested against v%s" % pykdversion_needed)
-		print(" and not against v%s" % currversion)
-		print(" This version may not work properly.")
-		print(" If you are having issues, I recommend to download the correct version from")
-		print("   %s" % pykdurl)
-		print("   (unzip with 7zip)")
-		if currversion.startswith("0.3"):
-			print("")
-			print(" NOTE: PyKD v%s requires msdia120.dll, which only gets installed via Visual Studio 2013 (yup, I know)" % currversion)
-			print(" Alternatively, you can use the copy of msdia120.dll from the pykd.pyd file")
-			print("  (%s), but use this file at your own risk" % pykdurl03)
+		print(" You are running pykd.pyd v%s. Use at your own risk" % currversion)
+		#print(" mona.py was tested against v%s" % pykdversion_needed)
+		#print(" and not against v%s" % currversion)
+		#print(" This version may not work properly.")
+		#print(" If you are having issues, I recommend to download the correct version from")
+		#print("   %s" % pykdurl)
+		#print("   (unzip with 7zip)")
+		#if currversion.startswith("0.3"):
+		#	print("")
+		#	print(" NOTE: PyKD v%s requires msdia120.dll, which only gets installed via Visual Studio 2013 (yup, I know)" % currversion)
+		#	print(" Alternatively, you can use the copy of msdia120.dll from the pykd.pyd file")
+		#	print("  (%s), but use this file at your own risk" % pykdurl03)
 		print("*******************************************************************************************")
 	return
 

@@ -34,23 +34,13 @@ To get mona.py up and running under WinDBG, please follow these steps:
 ### Windows 7 and up, 64bit OS, 64bit WinDBG
 #### Install x64 python and pip
 Python 2.7
-1. Install a recent 64bit version of Python 2.7.x (2.7.14 or higher), verify that it is going to be the default python version.  (Adjust system path if needed) 
-2. Install pip:
-- Download file get-pip.py from https://bootstrap.pypa.io/pip/2.7/get-pip.py
-- Run `python get-pip.py` from an administrator command prompt.
-- If needed, add `c:\Python27\Scripts` to the PATH System environment variable. Close the command prompt and open a new administrator command prompt.
-
-Python 3.9.0
-1. Install the 64bit version of Python 3.9.0, verify that it is going to be the default python version.  (Adjust system path if needed) 
-Pip should be installed automatically. Open a command prompt and run `pip -V` to verify that the installation was successful.
-The output should indicate the corresponding Python version as well. For example:
-```
-C:\>pip -V
-pip 20.2.3 from c:\users\corelan\appdata\local\programs\python\python39\lib\site-packages\pip (python 3.9)
-```
-Upgrade pip to the latest version:
-
+1. Install a recent 64bit version of Python 2.7.x (2.7.14 or higher) in the default installation folder (`c:\Python27`) and verify that it is going to be the default python version.  (Adjust system path if needed). (This procedure has been tested with installer `python-2.7.18.amd64.msi`) 
+2. Add `c:\Python27\Scripts` to the PATH System environment variable. Close the command prompt and open a new administrator command prompt.
+3. Upgrade pip
 `python -m pip install --upgrade pip`
+
+Python 3.9.0?
+1. windbglib/mona are currently not ready yet to be used with python3.
 
 #### Install pykd via pip
 Latest version:
@@ -59,7 +49,6 @@ Run `pip install pykd`
 #### Install PyKD bootstrapper (pykd_ext)
 1. Download the latest version from https://githomelab.ru/pykd/pykd-ext/-/wikis/Downloads and extract the file 
 2. From the x64 folder, copy pykd.dll into the WinDBG winext folder  `C:\Program Files (x86)\Windows Kits\8.0\Debuggers\x64\winext` or  `C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\winext`
-
 
 #### Install windbglib and mona
 
