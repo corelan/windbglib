@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 150 $
-$Id: windbglib.py 150 2022-10-29 18:04:00Z corelanc0d3r $ 
+$Revision: 151 $
+$Id: windbglib.py 151 2022-10-31 18:04:00Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -345,7 +345,9 @@ def checkVersion():
 		return
 	if pykdversion_needed != currversion:
 		# version must be higher
-		print(" You are running pykd.pyd v%s. Use at your own risk" % currversion)
+		print("")
+		print("** You are running pykd.pyd v%s. Use at your own risk **" % currversion)
+		print("")
 		#print(" mona.py was tested against v%s" % pykdversion_needed)
 		#print(" and not against v%s" % currversion)
 		#print(" This version may not work properly.")
@@ -357,7 +359,6 @@ def checkVersion():
 		#	print(" NOTE: PyKD v%s requires msdia120.dll, which only gets installed via Visual Studio 2013 (yup, I know)" % currversion)
 		#	print(" Alternatively, you can use the copy of msdia120.dll from the pykd.pyd file")
 		#	print("  (%s), but use this file at your own risk" % pykdurl03)
-		print("*******************************************************************************************")
 	return
 
 def getModulesFromPEB():
