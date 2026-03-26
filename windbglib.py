@@ -1,5 +1,5 @@
 """
-Copyright (c) 2011-2022, Peter Van Eeckhoutte - Corelan Consulting bv
+Copyright (c) 2011-2026, Peter Van Eeckhoutte - Corelan Consulting bv
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 151 $
-$Id: windbglib.py 151 2022-10-31 18:04:00Z corelanc0d3r $ 
+$Revision: 152 $
+$Id: windbglib.py 152 2026-03-26 18:04:00Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -166,9 +166,9 @@ def getPEBInfo():
 
 def getPEBAddress():
 	global cpebaddress
-	if cpebaddress ==  0:
-		peb = getPEBInfo()
-		cpebaddress = peb.getAddress()
+	#if cpebaddress ==  0:
+	peb = getPEBInfo()
+	cpebaddress = peb.getAddress()
 	return cpebaddress
 
 def getTEBInfo():
