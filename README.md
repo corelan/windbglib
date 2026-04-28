@@ -3,6 +3,14 @@ windbglib
 
 Public repository for windbglib, a wrapper around pykd.pyd (for Windbg), used by mona.py
 
+> [!IMPORTANT]
+> 🚀 This project has been replaced by [`mona3`](https://github.com/corelan/mona3), which contains both mona.py and windbglib.py
+>
+> 👉 Please use the new repository instead:
+> [https://github.com/corelan/mona3](https://github.com/corelan/mona3)
+>
+> ⚠️ The instructions below are kept for historical reasons only and should **not** be used anymore.
+
 
 Installation
 ------------
