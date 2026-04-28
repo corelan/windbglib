@@ -24,8 +24,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Revision: 152 $
-$Id: windbglib.py 152 2026-03-26 18:04:00Z corelanc0d3r $ 
+$Revision: 153 $
+$Id: windbglib.py 153 2026-03-26 18:04:00Z corelanc0d3r $ 
 """
 
 __VERSION__ = '1.0'
@@ -1844,7 +1844,7 @@ class opcode:
 	dump = ""
 
 	def __init__(self,address):
-		self.address = address
+		self.address = int(address)
 		self.dumpdata = ""
 		self.dump = ""
 		self.instruction = ""
